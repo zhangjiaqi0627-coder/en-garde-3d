@@ -2,220 +2,220 @@
 
 const FLASHCARD_DECK = Object.freeze([
   {
-    id: 'en_garde', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'En garde !', phonetic: '[ɑ̃ ɡaʁd] · 昂-嘎赫德',
+    id: 'en_garde', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'En garde !', phonetic: '[ɑ̃ ɡaʁd] · ahn GARD · 昂-嘎赫德',
     en: 'On Guard!', enSub: 'Assume your ready stance behind the line',
     zh: '实战姿势（各就各位）', zhSub: '每回合开局第一道口令',
-    desc: '裁判宣布每一剑开始的第一声指令，双方剑手需侧身站在各自实战线后，前膝微屈、护手盘护住防线。',
+    desc: 'First command of every phrase: both fencers take a balanced side stance behind their en-garde lines with bell guards covering their primary line. · 裁判开局第一拍口令，双方于实战线后摆好防守架势。',
     example: 'En garde ! Messieurs, êtes-vous prêts ? Allez !',
-    control: '对应机制：开局三拍执裁口令第 1 拍', tryWeapon: WeaponId.FOIL
+    control: 'Mechanic: Beat 1 of the 3-beat referee start cadence · 开局三拍口令第 1 拍', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'prets', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Êtes-vous prêts ?', phonetic: '[ɛt vu pʁɛ] · 艾特-乌-普黑',
+    id: 'prets', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Êtes-vous prêts ?', phonetic: '[ɛt vu pʁɛ] · et voo PREH · 艾特-乌-普黑',
     en: 'Are You Ready?', enSub: 'Final confirmation before combat starts',
     zh: '预备好了吗？', zhSub: '开局第二拍确认口令',
-    desc: '裁判确认双方剑手器材正常且做好心理与距离准备；在“Allez”响起前严禁提前抢攻。',
+    desc: 'Referee confirms both fencers are ready; false-starting before "Allez!" is strictly prohibited. · 确认双方就绪，Allez 响起前严禁抢攻。',
     example: 'En garde ! ... Prêts ? ... Allez !',
-    control: '对应机制：观察对手站姿与初始防区', tryWeapon: WeaponId.FOIL
+    control: 'Mechanic: Read your opponent\'s initial guard sector · 观察对手起手防区', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'allez', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Allez !', phonetic: '[a.le] · 阿-蕾',
+    id: 'allez', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Allez !', phonetic: '[a.le] · ah-LAY · 阿-蕾',
     en: 'Fence! / Play!', enSub: 'Begin active combat immediately',
     zh: '开始！（交锋开始）', zhSub: '正式进入计时与交锋状态',
-    desc: '裁判发出的开战信号。佩剑项目中双方往往在 Allez 瞬间同时启动向中央 4 米区爆发抢攻。',
+    desc: 'Signal to begin live combat. In Sabre, both fencers explode off the line on "Allez!" to contest the center 4-meter zone. · 开战信号，佩剑常在此瞬间爆发抢攻。',
     example: 'Prêts ? ... Allez ! Attaque à droite !',
-    control: '对应机制：听到 Allez 后按 D 前压争夺先手', tryWeapon: WeaponId.SABRE
+    control: 'Control: Press D on "Allez!" to march and claim initiative · 按 D 前压争夺先手', tryWeapon: WeaponId.SABRE
   },
   {
-    id: 'halte', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Halte !', phonetic: '[alt] · 阿尔特',
+    id: 'halte', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Halte !', phonetic: '[alt] · ALT · 阿尔特',
     en: 'Halt!', enSub: 'Stop fencing immediately',
     zh: '停！（中止交锋）', zhSub: '亮灯、出界或冲撞违例时立即停表',
-    desc: '当电审器亮灯、一方双脚退过底线或发生身体冲撞（Corps-à-Corps）时，裁判立刻喊 Halte 冻结比分判定。',
+    desc: 'Freezes the clock immediately when a scoring lamp lights, a fencer crosses the rear limit, or Corps-à-Corps collision occurs. · 亮灯、出界或贴身冲撞时裁判立即喊停。',
     example: 'Halte ! Corps-à-corps à gauche, carton jaune !',
-    control: '对应机制：触发子弹时间慢镜回放与裁判宣判', tryWeapon: WeaponId.FOIL
+    control: 'Mechanic: Triggers slow-motion replay & referee call · 触发慢镜与裁决', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'touche', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Touché ! Point !', phonetic: '[tu.ʃe pwɛ̃] · 图-谢 普万',
+    id: 'touche', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Touché ! Point !', phonetic: '[tu.ʃe pwɛ̃] · too-SHAY pwan · 图-谢 普万',
     en: 'Hit! Point Awarded!', enSub: 'Valid touch scored on target',
     zh: '刺中 / 劈中得分！', zhSub: '有效部位亮起红灯或绿灯并获判 1 分',
-    desc: '剑尖或刀刃合法击中有效靶面并通过优先权或闭锁时间审核后，裁判向得分方举手授予 1 分。',
+    desc: 'After verifying target validity, lockout window, and right-of-way, the referee awards 1 point to the scoring fencer. · 有效命中并通过优先权或闭锁判定后获判 1 分。',
     example: 'Attaque de la gauche, touché, point à gauche !',
-    control: '对应机制：有效命中触发 0.22x 慢镜特写并加 1 分', tryWeapon: WeaponId.FOIL
+    control: 'Mechanic: Valid hit triggers 0.22x bullet-time & +1 score · 有效命中慢镜加分', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'hors_cible', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Non valable (Hors cible)', phonetic: '[ɔʁ sibl] · 奥赫-西布勒',
+    id: 'hors_cible', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Non valable (Hors cible)', phonetic: '[ɔʁ sibl] · or SEEBL · 奥赫-西布勒',
     en: 'Off-Target (White Light)', enSub: 'Hit landed outside valid conductive lamé',
     zh: '无效部位（亮白灯停表）', zhSub: '花剑刺中四肢或面罩等金属背心以外区域',
-    desc: '花剑仅躯干金属背心有效；若剑尖刺中手臂或大腿，电审器亮起白灯暂停交锋，重置站位但不计分。',
+    desc: 'In Foil, only the conductive torso lamé is valid; hitting limbs or mask illuminates a white lamp and halts play without scoring. · 花剑刺中金属背心外亮白灯停表、不计分。',
     example: 'Attaque non valable à gauche, hors cible !',
-    control: '对应机制：花剑出剑时手腕抖动过大将偏靶亮白灯', tryWeapon: WeaponId.FOIL
+    control: 'Mechanic: Excessive wrist jitter scatters Foil thrusts off-target · 乱晃手腕易偏靶白灯', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'simultane', cat: 'referee', catLabel: '裁判口令 · REFEREE',
-    fr: 'Actions simultanées', phonetic: '[ak.sjɔ̃ si.myl.ta.ne] · 西谬塔内',
+    id: 'simultane', cat: 'referee', catLabel: 'REFEREE · 裁判口令',
+    fr: 'Actions simultanées', phonetic: '[ak.sjɔ̃ si.myl.ta.ne] · see-mool-tah-NAY · 西谬塔内',
     en: 'Simultaneous Actions', enSub: 'Both fencers attacked at the exact same moment',
     zh: '同时进攻（互中不计分）', zhSub: '花剑/佩剑双方同时起动互中，均不得分',
-    desc: '在遵循优先权的花剑和佩剑中央 4 米区内，双方毫无先后差异同时启动击中对方，裁判双手平挥宣布不计分重来。',
+    desc: 'In Foil and Sabre, if both fencers launch attacks simultaneously with neither holding priority, both lamps cancel out with no point awarded. · 花佩剑无先后同时互中不计分重来。',
     example: 'Actions simultanées, pas de touche ! En garde !',
-    control: '对应机制：均势对峙下同时互中双灯不加分', tryWeapon: WeaponId.SABRE
+    control: 'Mechanic: Neutral double-lights award 0 points in Foil/Sabre · 均势双灯不计分', tryWeapon: WeaponId.SABRE
   },
   {
-    id: 'quarte', cat: 'guard', catLabel: '防线与格挡 · PARADE',
-    fr: 'Quarte (4e position)', phonetic: '[kaʁt] · 卡赫特',
+    id: 'quarte', cat: 'guard', catLabel: 'PARRY & GUARD · 防线与格挡',
+    fr: 'Quarte (4e position)', phonetic: '[kaʁt] · KART · 卡赫特',
     en: 'Fourth Position (High Inside)', enSub: 'Protects upper-inside chest / left cheek',
     zh: '四号位防守（上内线 / 左立剑）', zhSub: '花重剑护左上胸，佩剑左立剑护左面',
-    desc: '最经典的击剑主防线之一，护手盘横向左移封闭胸膛内侧高路；佩剑中则以垂直刀背向外挡开横斩。',
+    desc: 'Classic lateral parry sweeping the bell guard left to close the high-inside chest line (or vertical sabre edge protecting the left cheek). · 护手盘左移封闭上内线或佩剑左面。',
     example: 'Parade de quarte et riposte directe, touché !',
-    control: '操作映射：鼠标移至左上方（或按数字键 1）', tryWeapon: WeaponId.FOIL
+    control: 'Control: Move mouse Top-Left or press [1] · 鼠标移至左上或按 1 键', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'sixte', cat: 'guard', catLabel: '防线与格挡 · PARADE',
-    fr: 'Sixte (6e) / Tierce (3e)', phonetic: '[sikst / tjɛʁs] · 西克斯特 / 蒂耶斯',
+    id: 'sixte', cat: 'guard', catLabel: 'PARRY & GUARD · 防线与格挡',
+    fr: 'Sixte (6e) / Tierce (3e)', phonetic: '[sikst / tjɛʁs] · SEEKST / TYERS · 西克斯特',
     en: 'Sixth / Third Position (High Outside)', enSub: 'Standard en-garde line protecting sword arm',
     zh: '六号位 / 佩剑三号位（上外线）', zhSub: '默认实战起手防线，重点保护持剑手腕',
-    desc: '花剑与重剑以六号位（Sixte）为基准防线封闭外侧并保护手腕；佩剑则以三号位（Tierce）立剑保护持剑右臂。',
+    desc: 'Default classical en-garde line: Sixte in Foil/Épée closes the high-outside line and shields the exposed wrist; Tierce in Sabre guards the flank/arm. · 默认基准防线，重点保护持剑手腕右臂。',
     example: 'Engagement en sixte, opposition au poignet !',
-    control: '操作映射：鼠标移至右上方（或按数字键 2）', tryWeapon: WeaponId.EPEE
+    control: 'Control: Move mouse Top-Right or press [2] · 鼠标移至右上或按 2 键', tryWeapon: WeaponId.EPEE
   },
   {
-    id: 'quinte', cat: 'guard', catLabel: '防线与格挡 · PARADE',
-    fr: 'Quinte (5e position Sabre)', phonetic: '[kɛ̃t] · 坎特',
+    id: 'quinte', cat: 'guard', catLabel: 'PARRY & GUARD · 防线与格挡',
+    fr: 'Quinte (5e position Sabre)', phonetic: '[kɛ̃t] · KANT · 坎特',
     en: 'Fifth Position (Overhead Roof Guard)', enSub: 'Horizontal sabre blade raised above mask',
     zh: '五号位横刀架顶（佩剑专属防头）', zhSub: '刀身横置头顶上方拦截当头直劈',
-    desc: '佩剑最具视觉辨识度的格挡技术！面对对手凌厉的劈头（Coup à la Tête），迅速上抬护手将刀刃横架于面罩上方弹开来刀。',
+    desc: 'Signature Sabre overhead parry! Raise the hilt and hold the blade horizontally above your mask to block descending head cuts (Coup à la Tête). · 佩剑专属横刀架顶，拦截当头直劈。',
     example: 'Parade de quinte haute, riposte au flanc, point !',
-    control: '操作映射：佩剑模式下鼠标上移至正上方架顶', tryWeapon: WeaponId.SABRE
+    control: 'Control: Raise mouse Top-Center in Sabre mode · 佩剑鼠标上抬架顶', tryWeapon: WeaponId.SABRE
   },
   {
-    id: 'septime_octave', cat: 'guard', catLabel: '防线与格挡 · PARADE',
-    fr: 'Septime (7e) & Octave (8e)', phonetic: '[sɛp.tim / ɔk.tav] · 塞普蒂姆 / 奥克塔夫',
+    id: 'septime_octave', cat: 'guard', catLabel: 'PARRY & GUARD · 防线与格挡',
+    fr: 'Septime (7e) & Octave (8e)', phonetic: '[sɛp.tim / ɔk.tav] · sep-TEEM / ok-TAHV · 七八号位',
     en: 'Seventh & Eighth (Low Lines)', enSub: 'Semi-circular parries defending lower abdomen & thigh',
     zh: '七号位与八号位（下内线 / 下外线）', zhSub: '剑尖下沉画半圆拦截低位潜刺与点脚',
-    desc: '当对手下蹲潜刺（Passata Sotto）或重剑狙击膝盖脚面时，剑尖迅速下沉扫过下内线（7号）或下外线（8号）拨开来剑。',
+    desc: 'Semi-circular low-line parries dropping the tip to sweep away ducking thrusts (Passata Sotto) or Épée foot/knee snipes. · 剑尖下沉拦截下蹲潜刺与重剑点脚。',
     example: 'Parade d\'octave en bas, riposte au corps !',
-    control: '操作映射：鼠标移至左下（7号）或右下（8号/佩剑2号）', tryWeapon: WeaponId.FOIL
+    control: 'Control: Move mouse Bottom-Left (7) or Bottom-Right (8/2) · 左下7号 / 右下8号', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'parade_riposte', cat: 'guard', catLabel: '防线与格挡 · PARADE',
-    fr: 'Parade-Riposte', phonetic: '[pa.ʁad ʁi.pɔst] · 帕哈德-里波斯特',
+    id: 'parade_riposte', cat: 'guard', catLabel: 'PARRY & GUARD · 防线与格挡',
+    fr: 'Parade-Riposte', phonetic: '[pa.ʁad ʁi.pɔst] · pah-RAHD ree-POST · 格挡还击',
     en: 'Parry and Riposte', enSub: 'Deflecting an attack to seize right-of-way and counter-strike',
     zh: '格挡还击（防反夺权）', zhSub: '击剑攻防转换最核心的得分手段',
-    desc: '用剑根拨开对手进攻的瞬间，进攻优先权立刻100%易主！在最后 140ms 内精准迎击更可触发“完美弹反（Parade Parfaite）”。',
+    desc: 'Deflecting an opponent\'s attack with your Forte immediately transfers 100% right-of-way to you; timing within 140ms triggers a Perfect Parry! · 格挡瞬间夺回100%优先权，精准迎击触发完美弹反。',
     example: 'Parade parfaite et riposte immédiate, touché !',
-    control: '操作映射：迎向红光扇区滑鼠或按右键格挡，立即左键还击', tryWeapon: WeaponId.FOIL
+    control: 'Control: Swipe into red threat sector / RMB, then LMB to Riposte · 右键格挡后立即左键还击', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'marche_rompre', cat: 'attack', catLabel: '步法与进攻 · ATTAQUE',
-    fr: 'Marche & Rompre', phonetic: '[maʁʃ / ʁɔ̃pʁ] · 玛赫什 / 宏普赫',
+    id: 'marche_rompre', cat: 'attack', catLabel: 'FOOTWORK & ATTACK · 步法与进攻',
+    fr: 'Marche & Rompre', phonetic: '[maʁʃ / ʁɔ̃pʁ] · MARSH / ROHMPR · 前进与后撤',
     en: 'Advance & Retreat', enSub: 'Fundamental footwork controlling fencing measure',
     zh: '前进步与后撤步（控距步法）', zhSub: '击剑70%的胜负取决于距离控制（Mesure）',
-    desc: '前脚先动跟后脚为前进步（建立主动权），后脚先退跟前脚为后撤步（诱敌落空）。切忌只前走不出剑导致犹豫失权。',
+    desc: 'Advancing (Marche) builds offensive priority; retreating (Rompre) pulls measure so opponent lunges fall short. Avoid marching too long without striking! · D 前进建立主动，A 后撤拉距诱空。',
     example: 'Attaque en marchant, fente directe !',
-    control: '操作映射：D 键前进步压迫 · A 键后撤步拉距离', tryWeapon: WeaponId.FOIL
+    control: 'Control: [D] Advance · [A] Retreat · D 键前压 / A 键后撤', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'fente', cat: 'attack', catLabel: '步法与进攻 · ATTAQUE',
-    fr: 'La Fente (Lunge)', phonetic: '[la fɑ̃t] · 拉-方特',
+    id: 'fente', cat: 'attack', catLabel: 'FOOTWORK & ATTACK · 步法与进攻',
+    fr: 'La Fente (Lunge)', phonetic: '[la fɑ̃t] · lah FAHNT · 弓步突刺',
     en: 'The Lunge', enSub: 'Explosive rear-leg drive with full sword-arm extension',
     zh: '弓步突刺 / 弓步劈斩', zhSub: '先伸持剑臂、后腿猛蹬爆发跨步的终结动作',
-    desc: '遵循“剑尖先行、手臂引体”原则，先刺出手臂确立优先权再跨出前腿，后臂向后平展保持重心平衡。',
+    desc: 'Point leads the body: extend the weapon arm first to establish priority, then drive explosively off the rear leg to close measure. · 剑尖先行、手臂引体，后腿爆发蹬地突刺。',
     example: 'Allongement du bras et fente en sixte, touché !',
-    control: '操作映射：在最佳射程内点击鼠标左键或按空格键', tryWeapon: WeaponId.FOIL
+    control: 'Control: Left-Click (LMB) or [Space] inside optimal measure · 最佳射程内按左键或空格', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'fleche_flunge', cat: 'attack', catLabel: '步法与进攻 · ATTAQUE',
-    fr: 'Flèche & Flunge', phonetic: '[flɛʃ / flʌndʒ] · 弗莱什 / 弗朗奇',
+    id: 'fleche_flunge', cat: 'attack', catLabel: 'FOOTWORK & ATTACK · 步法与进攻',
+    fr: 'Flèche & Flunge', phonetic: '[flɛʃ / flʌndʒ] · FLESH / FLUNJ · 飞冲与飞跃',
     en: 'Arrow Charge & Flying Lunge', enSub: 'Explosive running blitz (Foil/Épée) vs airborne leap cut (Sabre)',
     zh: '飞冲刺（花重剑）与飞跃斩（佩剑）', zhSub: '佩剑严禁交叉步冲刺，故演化出腾空飞跃劈砍',
-    desc: '花剑和重剑允许交叉步全力冲刺（Flèche）；而现代佩剑规则禁止双脚前后交叉前进，顶尖选手因此发明了双脚腾空前跃劈砍的 Flunge！',
+    desc: 'Foil & Épée permit explosive crossover sprinting charges (Flèche); Sabre bans forward foot crossovers, birthing the airborne leaping Flunge! · 花重剑交叉步飞冲，佩剑双脚腾空飞跃劈斩。',
     example: 'Flunge spectaculaire à la tête, point !',
-    control: '操作映射：攒满绝技槽后按 E 键即可释放飞冲/飞跃绝技', tryWeapon: WeaponId.SABRE
+    control: 'Control: Fill Master Gauge to 100% then press [E] · 满气槽按 E 释放绝技', tryWeapon: WeaponId.SABRE
   },
   {
-    id: 'feinte_degagement', cat: 'attack', catLabel: '步法与进攻 · ATTAQUE',
-    fr: 'Feinte-Dégagement', phonetic: '[fɛ̃t de.ɡaʒ.mɑ̃] · 凡特-代嘎日芒',
+    id: 'feinte_degagement', cat: 'attack', catLabel: 'FOOTWORK & ATTACK · 步法与进攻',
+    fr: 'Feinte-Dégagement', phonetic: '[fɛ̃t de.ɡaʒ.mɑ̃] · FANT day-gahzh-MAHN · 虚晃变线',
     en: 'Feint-Disengage', enSub: 'Faking into one line then dipping under the bell guard to hit open line',
     zh: '虚晃绕剑变线攻', zhSub: '假刺诱骗对手移动护手盘，瞬间从下方绕入空当',
-    desc: '先向某防区做逼真假刺（黄光扇区预警），待对手受骗横向格挡露出破绽，手指轻捻剑柄绕过护手盘刺入另一侧。',
+    desc: 'Threaten one sector (amber pulse warning) to bait a premature parry, then spiral the tip smoothly underneath the opponent\'s bell guard into the open line. · 假刺骗挡（黄光预警），瞬间绕过护手盘刺入空当。',
     example: 'Feinte en quarte, dégagement en sixte, touché !',
-    control: '应对策略：看到黄圈虚晃忍住别抢挡，等变红圈再格挡', tryWeapon: WeaponId.FOIL
+    control: 'Counterplay: Hold steady on yellow feints; parry only on red! · 黄光忍住，红光再挡', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'battement_coupe', cat: 'attack', catLabel: '步法与进攻 · ATTAQUE',
-    fr: 'Battement & Coupé', phonetic: '[bat.mɑ̃ / ku.pe] · 巴特芒 / 库佩',
+    id: 'battement_coupe', cat: 'attack', catLabel: 'FOOTWORK & ATTACK · 步法与进攻',
+    fr: 'Battement & Coupé', phonetic: '[bat.mɑ̃ / ku.pe] · baht-MAHN / koo-PAY · 敲剑与挑剑',
     en: 'Beat Attack & Cut-Over', enSub: 'Striking opponent\'s blade aside or lifting over the tip',
     zh: '敲剑进攻与挑剑越尖攻', zhSub: '破除对手伸臂亮剑（Pointe en Ligne）的利器',
-    desc: '清脆敲击对手剑身中前部震开其防线并夺取优先权（Battement），或上提越过对手剑尖换线突刺（Coupé）。',
+    desc: 'Crisply strike the opponent\'s foible to knock their guard open and seize priority (Battement), or lift cleanly over their point into an open high line (Coupé). · 强剑身敲击夺权或挑剑越过剑尖换线。',
     example: 'Battement sur le fer et attaque directe !',
-    control: '操作映射：快速滑过对手护手盘即可敲开其剑尖夺权', tryWeapon: WeaponId.FOIL
+    control: 'Control: Flick swiftly across opponent\'s guard dot to beat their blade · 快速滑过对手剑位敲剑夺权', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'pointe_en_ligne', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Pointe en Ligne', phonetic: '[pwɛ̃t ɑ̃ liɲ] · 普万特-昂-里涅',
+    id: 'pointe_en_ligne', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Pointe en Ligne', phonetic: '[pwɛ̃t ɑ̃ liɲ] · pwant ahn LEENY · 伸臂亮剑',
     en: 'Point-in-Line', enSub: 'Extended straight arm with weapon tip threatening valid target',
     zh: '伸臂亮剑（直线威慑先手）', zhSub: '在对手发起进攻前提前伸直手臂将剑尖对准靶心',
-    desc: '花剑和佩剑的特殊先手规则：若你在安全距离提前稳稳伸直持剑臂指向对手，对手若不先敲开你的剑而盲目直冲，优先权归你！',
+    desc: 'Special Foil/Sabre priority rule: establishing a straight arm with point threatening target BEFORE the opponent starts an attack wins right-of-way unless beaten aside! · 提前伸直手臂对准靶心可获先手威慑。',
     example: 'Pointe en ligne maintenue, attaque adverse sans battement, point à gauche !',
-    control: '操作映射：花剑模式下稳守中心防区 0.42s 自动激活亮剑激光', tryWeapon: WeaponId.FOIL
+    control: 'Control: Hold center guard steadily for 0.42s in Foil · 花剑稳守中心 0.42s 激活亮剑', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'priorite', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Priorité (Convention)', phonetic: '[pʁi.jɔ.ʁi.te] · 普里奥里泰',
+    id: 'priorite', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Priorité (Convention)', phonetic: '[pʁi.jɔ.ʁi.te] · pree-or-ee-TAY · 进攻优先权',
     en: 'Right-of-Way', enSub: 'Initiative rule governing Foil and Sabre double-lights',
     zh: '进攻优先权法则', zhSub: '花剑与佩剑的灵魂——谁握有主动权谁在双灯时得分',
-    desc: '源于古典剑术“先防身再伤敌”的准则。主动先伸臂进攻、成功敲剑或格挡的一方享有优先权；落空或被格挡则立刻失权。',
+    desc: 'Governs Foil & Sabre double-lights: the fencer who initiates the attack first, beats the blade, or parries holds Priority; missing or getting parried forfeits it immediately. · 花佩剑双灯裁决核心：主动进攻、敲剑或格挡者得分。',
     example: 'Attaque composée à gauche, priorité maintenue !',
-    control: '界面指示：顶部记分牌下方 PRIORITÉ 拔河条实时量化显示', tryWeapon: WeaponId.FOIL
+    control: 'HUD: Track the live PRIORITÉ tug-of-war bar under the scorebug · 顶部拔河条实时显示优先权', tryWeapon: WeaponId.FOIL
   },
   {
-    id: 'coup_double_epee', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Coup Double (Épée 40ms)', phonetic: '[ku dubl] · 库-杜布勒',
+    id: 'coup_double_epee', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Coup Double (Épée 40ms)', phonetic: '[ku dubl] · koo DOOBL · 重剑双灯互中',
     en: 'Double Touch (40ms Lockout)', enSub: 'Both fencers score 1 point if hits land within 40 milliseconds',
     zh: '重剑同时互中（双灯同得）', zhSub: '无优先权约束，40毫秒内互中双方各加 1 分',
-    desc: '重剑还原真实决斗，全身从面罩到脚尖皆有效且无优先权。只有比对手快出 40ms 以上才能触发电审闭锁单灯独得 1 分！',
+    desc: 'Épée has no right-of-way and full-body target: if both fencers depress their 7.35N tips within 40–45ms, both lamps light and both score +1! Beat them by >45ms for a single light. · 重剑无优先权，45ms内互中双灯同得。',
     example: 'Coup double ! Un point partout !',
-    control: '战术精髓：重剑可利用距离差在 2.74m 外优先狙击对手手腕', tryWeapon: WeaponId.EPEE
+    control: 'Tactic: Snipe the exposed wrist from 2.74m to lock out single-light · 远距狙击手腕打单灯', tryWeapon: WeaponId.EPEE
   },
   {
-    id: 'saignee_poignet', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Saignée au Poignet & Pied', phonetic: '[sɛ.ɲe o pwa.ɲɛ] · 塞涅-奥-普瓦涅',
+    id: 'saignee_poignet', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Saignée au Poignet & Pied', phonetic: '[sɛ.ɲe o pwa.ɲɛ] · sen-YAY oh pwan-YAY · 狙腕与点脚',
     en: 'Wrist Snipe & Foot Touch', enSub: 'Targeting the closest exposed extremity in Épée',
     zh: '重剑狙击手腕与下潜点脚', zhSub: '手腕比躯干近约 36 厘米，是重剑博弈第一要害',
-    desc: '重剑大师极少盲目深刺胸膛，而是紧盯对手护手盘外的手腕前臂（Poignet）与前脚背（Pied）进行远距精确打击。',
+    desc: 'Because the sword wrist sits ~36cm closer than the chest, Épée masters pick off the exposed forearm/wrist (Poignet) or lead foot (Pied) from outside torso lunge range. · 手腕比躯干近36cm，是重剑远距第一靶点。',
     example: 'Arrêt au temps sur le poignet, une seule lumière !',
-    control: '操作映射：重剑选右上角腕部防区可在 2.74m 远距出剑命中', tryWeapon: WeaponId.EPEE
+    control: 'Control: Aim Top-Right (Poignet) in Épée to snipe from 2.74m · 重剑右上防区远距狙腕', tryWeapon: WeaponId.EPEE
   },
   {
-    id: 'coup_de_taille', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Coup de Taille (Sabre)', phonetic: '[ku də taj] · 库-德-塔伊',
+    id: 'coup_de_taille', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Coup de Taille (Sabre)', phonetic: '[ku də taj] · koo duh TAH-yuh · 佩剑挥斩',
     en: 'Sabre Cutting / Slashing', enSub: 'Scoring with the front edge, flat, or back third of the blade',
     zh: '佩剑劈砍有效（腰线以上）', zhSub: '佩剑以刃口挥斩为主，腰部以下击中无效不停表',
-    desc: '脱胎于轻骑兵马刀，腰部以上（头盔、双臂、躯干）整个刀刃前缘与刀背前1/3碰触导电衣即亮灯得分；劈中大腿腰下不计分且不停表（Coup Bas）。',
+    desc: 'Descended from cavalry swordsmanship: any cut with the edge, flat, or back third of the blade above the waist scores immediately; low hits below the waist (Coup Bas) do not halt play. · 佩剑腰上刀刃碰触即得分，腰下无效不停表。',
     example: 'Moulinet coup à la tête, touché !',
-    control: '操作映射：佩剑模式下大幅挥动鼠标或按左键直接劈出炽热刀弧', tryWeapon: WeaponId.SABRE
+    control: 'Control: Sweep mouse briskly or Left-Click to unleash Sabre arcs · 佩剑挥鼠或左键弧形劈斩', tryWeapon: WeaponId.SABRE
   },
   {
-    id: 'opposition_fer', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Opposition & Enveloppement', phonetic: '[ɔ.pɔ.zi.sjɔ̃] · 奥波西雄',
+    id: 'opposition_fer', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Opposition & Enveloppement', phonetic: '[ɔ.pɔ.zi.sjɔ̃] · oh-poh-zee-SYOHN · 抗剑与绞剑',
     en: 'Blade Bind & Circular Taking', enSub: 'Maintaining steel-on-steel leverage while thrusting',
     zh: '抗剑压制与螺旋绞剑', zhSub: '双剑交接时利用杠杆力封死对手反击线路',
-    desc: '在花剑与重剑交锋中贴住对手剑身持续施压（Fer sur Fer）或画圆绞剑（Enveloppement），可一边锁死对方剑尖一边安全刺中目标。',
+    desc: 'Pressing your strong Forte against the opponent\'s weak Foible (Fer sur Fer) or circling their blade (Enveloppement) locks out their counter-attack while driving your point home. · 以强剑身压制弱剑尖或画圆绞剑破防。',
     example: 'Attaque par opposition en sixte, touché !',
-    control: '操作映射：准星贴近对手护手盘持续抗剑或画圈即可破防夺权', tryWeapon: WeaponId.EPEE
+    control: 'Control: Hold reticle against rival guard or draw a 360° circle · 贴近护手抗剑或画圈绞剑', tryWeapon: WeaponId.EPEE
   },
   {
-    id: 'corps_a_corps_esquive', cat: 'rules', catLabel: '剑种与规则 · RÈGLEMENT',
-    fr: 'Corps-à-Corps & Esquive', phonetic: '[kɔʁ a kɔʁ / ɛs.kiv] · 科赫-阿-科赫',
+    id: 'corps_a_corps_esquive', cat: 'rules', catLabel: 'WEAPONS & RULES · 剑种与规则',
+    fr: 'Corps-à-Corps & Esquive', phonetic: '[kɔʁ a kɔʁ / ɛs.kiv] · kor ah KOR / es-KEEV · 冲撞与闪避',
     en: 'Illegal Body Collision & Ducking Evasion', enSub: 'Yellow/Red card penalty vs clean vertical dodge',
     zh: '贴身冲撞罚牌与下潜闪避', zhSub: '恶意冲撞吃黄红牌；灵巧蹲跳闪避可直接防反',
-    desc: '距离小于 1.18m 仍蛮横前冲撞击对手将被判黄牌警告、再犯红牌罚分；而面对上路刺劈时抓准时机按 S 下蹲（Esquive）则是合法的华丽反杀技！',
+    desc: 'Barging closer than 1.18m causes illegal Corps-à-Corps (Yellow Card warning, then Red Card penalty point), whereas cleanly ducking under a high lunge ([S] Esquive) opens an instant counter! · 恶意贴身冲撞罚黄红牌，按 S 下蹲闪避可华丽反杀。',
     example: 'Esquive sous l\'attaque haute, remise au corps, touché !',
-    control: '操作映射：对手攻上路按 S 下蹲闪避，攻下路按 W 跃起闪避', tryWeapon: WeaponId.FOIL
+    control: 'Control: Press [S] to duck high attacks · Press [W] to jump low sweeps · S 下蹲躲上路 / W 跃起躲下路', tryWeapon: WeaponId.FOIL
   }
 ]);
 
@@ -223,57 +223,57 @@ const TUTORIAL_LESSONS = Object.freeze([
   {
     step: 1,
     weapon: WeaponId.FOIL,
-    title: '1. 花剑四象限防线 (4 / 6 / 7 / 8号位)',
-    theory: '花剑防线分为左上 Quarte(4)、右上 Sixte(6)、左下 Septime(7)、右下 Octave(8)。观察中央半透明四向剑位环，平稳移动鼠标控剑。',
-    taskPrompt: '平稳移动鼠标依次点亮 4、6、7、8 四个剑位扇区',
+    title: '1. Foil 4-Quadrant Guard Lines (4 / 6 / 7 / 8) · 花剑四象限防线',
+    theory: 'Foil divides target defense into Quarte (4 Top-Left), Sixte (6 Top-Right), Septime (7 Low-Left), and Octave (8 Low-Right). Glide your mouse smoothly without erratic jerking. · 平稳移动鼠标依次切换 4/6/7/8 四个剑位扇区。',
+    taskPrompt: 'Smoothly visit all 4 guard sectors (4, 6, 7, 8) · 平稳点亮四个剑位扇区',
     goalCount: 4
   },
   {
     step: 2,
     weapon: WeaponId.FOIL,
-    title: '2. 控距步法与高低立体闪避 (WASD)',
-    theory: '最佳交锋距离为 1.65m–2.38m（贴脸冲撞会吃黄牌）。按 W 可跃起躲下路，按 S 可下蹲闪避上路攻击。',
-    taskPrompt: '按 D 前进、A 后撤、W/S 跳蹲各完成 1 次',
+    title: '2. Footwork Measure & Vertical Evasion (WASD) · 控距步法与立体闪避',
+    theory: 'Optimal Foil measure is 1.65m–2.38m (colliding <1.18m draws a Yellow Card). Press [W] to leap over low sweeps and [S] to duck high lunges. · 保持最佳交锋距离，演练前进、后撤与跳蹲闪避。',
+    taskPrompt: 'Perform [D] Advance, [A] Retreat, and [W/S] Jump/Duck once each · 完成前进、后撤与跳蹲',
     goalCount: 3
   },
   {
     step: 3,
     weapon: WeaponId.FOIL,
-    title: '3. 瞄准空当弓步直刺 (Fente Directe)',
-    theory: '花剑仅躯干金属背心有效（刺偏四肢亮白灯）。避开教练封闭的左上4号位，瞄准空当按左键或空格突刺。',
-    taskPrompt: '瞄准空当象限，按左键或 Space 刺中躯干 2 次',
+    title: '3. Direct Lunge into Open Line (Fente Directe) · 瞄准空当弓步直刺',
+    theory: 'In Foil, only the metallic torso lamé scores (limbs trigger off-target White Light). Bypass the Coach\'s closed Quarte (4) guard and lunge into an open quadrant! · 避开教练封闭的4号位，瞄准空当刺中躯干。',
+    taskPrompt: 'Aim at an open sector and press LMB / Space to score 2 valid touches · 刺中空当躯干 2 次',
     goalCount: 2
   },
   {
     step: 4,
     weapon: WeaponId.FOIL,
-    title: '4. 完美弹反与防反还击 (Parade-Riposte)',
-    theory: '对手先攻时握有优先权。观察准星外围红光预警扇区，滑鼠移入同侧（或按右键）格挡夺权，立即左键还击！',
-    taskPrompt: '格挡教练进攻并立即左键 Riposte 还击得 2 分',
+    title: '4. Parry-Riposte & Right-of-Way · 完美弹反与防反还击',
+    theory: 'When the opponent attacks first, they hold Priority. Watch the red warning arc, swipe into the matching quadrant (or press RMB) to parry, then immediately Left-Click to Riposte! · 迎向红光格挡夺权后立即左键还击。',
+    taskPrompt: 'Parry the Coach\'s attack and score 2 Riposte touches · 格挡并还击得 2 分',
     goalCount: 2
   },
   {
     step: 5,
     weapon: WeaponId.FOIL,
-    title: '5. 识破虚晃假动作 (Feinte & Esquive)',
-    theory: '看到黄色脉冲扇区为假动作（抢挡会挥空硬直！），等变成红色真刺再格挡，或按 S 下蹲闪避反杀。',
-    taskPrompt: '识破黄光虚晃，延后格挡或下蹲闪避反击得 2 分',
+    title: '5. Reading Feints & Duck Counter (Feinte & Esquive) · 识破虚晃假动作',
+    theory: 'Amber pulsing arcs indicate a fake Feint (biting early locks your guard!). Wait for the red real lunge to parry, or press [S] to duck underneath and counter-strike! · 黄光虚晃忍住别抢挡，等变红光再挡或按 S 下蹲反杀。',
+    taskPrompt: 'Outsmart the yellow feint via delayed parry or [S] duck-counter (2 pts) · 识破假动作反击得 2 分',
     goalCount: 2
   },
   {
     step: 6,
     weapon: WeaponId.EPEE,
-    title: '6. 重剑独立机制：2.74m 狙击手腕与 40ms 双灯',
-    theory: '重剑地面投射三道射程线：【手腕 POIGNET】比躯干近 0.36m，可在 2.70m 外远距狙腕单灯得分！互中误差 ≤40ms 则双灯同得。',
-    taskPrompt: '移至右上腕部防区或右下脚面防区，远距点刺得 2 分',
+    title: '6. Épée Mastery: 2.74m Wrist Snipe & 45ms Lockout · 重剑远距狙腕与双灯',
+    theory: 'Épée projects 3 range rings on the piste: the Wrist (POIGNET) is 0.36m closer than the chest, letting you snipe single-lights from 2.70m! Mutual hits ≤45ms award +1 to both. · 瞄准右上腕部或右下脚面远距狙击单灯。',
+    taskPrompt: 'Aim Top-Right (Wrist) or Bottom-Right (Foot) for 2 long-range Épée touches · 远距狙腕或点脚得 2 分',
     goalCount: 2
   },
   {
     step: 7,
     weapon: WeaponId.SABRE,
-    title: '7. 佩剑独立机制：横刀架顶与 Moulinet 劈砍',
-    theory: '佩剑立剑持握！鼠标上抬变成【Quinte 5号位横刀架顶】接下劈头，大幅挥鼠或按左键直接劈出炽热弧形刀浪！',
-    taskPrompt: '使用佩剑横刀架顶反击或大弧度挥砍拿下 2 分毕业',
+    title: '7. Sabre Mastery: Quinte Roof Guard & Moulinet Cuts · 佩剑架顶与劈砍',
+    theory: 'Sabre scores with blade edges above the waist! Raise your mouse Top-Center for Quinte (5) Overhead Guard against head cuts, and sweep or Left-Click for blazing Moulinet slashes! · 上抬鼠标5号架顶防头，挥鼠或左键劈砍毕业。',
+    taskPrompt: 'Score 2 Sabre touches via Quinte parry-riposte or Moulinet cuts · 佩剑架顶反击或劈砍得 2 分',
     goalCount: 2
   }
 ]);

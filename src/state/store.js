@@ -139,7 +139,7 @@ const state = createStrictDomainStateStore({
     lastPointColor: '#38bdf8',
     rightOfWay: 'none',
     rowMeter: 0,
-    rowReason: 'NEUTRAL · 均势对峙',
+    rowReason: 'NEUTRAL · BALANCED · 均势',
     hitStopTimer: 0,
     timeScale: 1.0,
     slowMoTimer: 0,

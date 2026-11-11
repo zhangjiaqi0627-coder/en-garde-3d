@@ -11,7 +11,7 @@ import urllib.request
 from pathlib import Path
 
 REPO_NAME = "en-garde-3d"
-REPO_DESC = "全剑种 3D 击剑竞技与三语战术教学模拟（花剑 Fleuret · 重剑 Épée · 佩剑 Sabre）"
+REPO_DESC = "Zero-build 3D Olympic fencing simulator (Foil · Épée · Sabre) with 120Hz FIE blade physics & trilingual lexicon | 全剑种 3D 击剑竞技与战术模拟"
 
 
 def find_token() -> str:
@@ -113,6 +113,13 @@ def main():
         print(f"      公开仓库创建成功: {create_resp.get('html_url')}")
     elif status == 200:
         print(f"      远程仓库已存在: {repo_info.get('html_url')}")
+        patch_payload = {
+            "description": REPO_DESC,
+            "homepage": pages_home,
+        }
+        p_code, _ = github_api_request(repo_url, token, method="PATCH", data=patch_payload)
+        if p_code == 200:
+            print("      已同步更新远程仓库英文+中文简介 (Description & Homepage)。")
     else:
         print(f"[ERROR] 查询仓库异常 (HTTP {status}): {repo_info.get('message')}")
         sys.exit(1)

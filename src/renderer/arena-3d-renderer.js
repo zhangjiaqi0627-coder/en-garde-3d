@@ -1209,7 +1209,7 @@ function renderViewportReticle(vw, vh, isP2Pov) {
   } else if (!isP2Pov && state.playerAction === Action.RECOVERY && state.remiseCooldown <= 0) {
     ctx.font = '800 9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#a7f3d0';
-    ctx.fillText('LMB · REMISE 补刺', aimX + 20, aimY + 20);
+    ctx.fillText('LMB · REMISE · 补刺', aimX + 20, aimY + 20);
   }
   ctx.restore();
 }

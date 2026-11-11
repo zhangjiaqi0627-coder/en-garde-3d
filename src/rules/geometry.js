@@ -34,48 +34,48 @@ function getQuadCoords(q, weapon = state.selectedWeapon) {
 function getQuadrantLabel(q, weapon = state.selectedWeapon) {
   if (weapon === WeaponId.SABRE) {
     switch (q) {
-      case Quadrant.NW: return 'Quinte (5) · 横剑架顶 / 劈头';
-      case Quadrant.NE: return 'Tierce (3) · 右外立剑 / 劈臂';
-      case Quadrant.SW: return 'Quarte (4) · 左内立剑 / 横斩面';
-      case Quadrant.SE: return 'Seconde (2) · 下外斜防 / 撩肋';
-      default:          return 'Tierce (3) · 右外立剑';
+      case Quadrant.NW: return 'Quinte (5) · Overhead Roof / Head Cut · 架顶劈头';
+      case Quadrant.NE: return 'Tierce (3) · High Outside / Arm Cut · 外立劈臂';
+      case Quadrant.SW: return 'Quarte (4) · High Inside / Cheek Cut · 内立斩面';
+      case Quadrant.SE: return 'Seconde (2) · Low Flank Guard / Cut · 下外撩肋';
+      default:          return 'Tierce (3) · High Outside · 外立';
     }
   }
   if (weapon === WeaponId.EPEE) {
     switch (q) {
-      case Quadrant.NW: return 'Masque (4) · 瞄准面罩上内';
-      case Quadrant.NE: return 'Poignet (6) · 狙击手腕 (+0.36m)';
-      case Quadrant.SW: return 'Corps (7) · 瞄准胸腹内线';
-      case Quadrant.SE: return 'Pied (8) · 狙击前脚面膝盖';
-      default:          return 'Poignet (6) · 狙击手腕';
+      case Quadrant.NW: return 'Masque (4) · Mask High-Inside · 面罩上内';
+      case Quadrant.NE: return 'Poignet (6) · Wrist Snipe (+0.36m) · 狙腕';
+      case Quadrant.SW: return 'Corps (7) · Chest / Torso · 胸腹躯干';
+      case Quadrant.SE: return 'Pied (8) · Lead Foot / Knee · 狙击脚面';
+      default:          return 'Poignet (6) · Wrist Guard · 护腕';
     }
   }
   switch (q) {
-    case Quadrant.NW: return 'Quarte (4) · 上内线';
-    case Quadrant.NE: return 'Sixte (6) · 上外线';
-    case Quadrant.SW: return 'Septime (7) · 下内线';
-    case Quadrant.SE: return 'Octave (8) · 下外线';
-    default:          return 'Sixte (6) · 上外线';
+    case Quadrant.NW: return 'Quarte (4) · High Inside · 上内线';
+    case Quadrant.NE: return 'Sixte (6) · High Outside · 上外线';
+    case Quadrant.SW: return 'Septime (7) · Low Inside · 下内线';
+    case Quadrant.SE: return 'Octave (8) · Low Outside · 下外线';
+    default:          return 'Sixte (6) · High Outside · 上外线';
   }
 }
 
 function getQuadrantShort(q, weapon = state.selectedWeapon) {
   if (weapon === WeaponId.SABRE) {
     switch (q) {
-      case Quadrant.NW: return 'Quinte(5·头顶)';
-      case Quadrant.NE: return 'Tierce(3·右臂)';
-      case Quadrant.SW: return 'Quarte(4·左面)';
-      case Quadrant.SE: return 'Seconde(2·下肋)';
+      case Quadrant.NW: return 'Quinte(5·Head 头)';
+      case Quadrant.NE: return 'Tierce(3·Arm 臂)';
+      case Quadrant.SW: return 'Quarte(4·Cheek 面)';
+      case Quadrant.SE: return 'Seconde(2·Flank 肋)';
       default:          return 'Tierce(3)';
     }
   }
   if (weapon === WeaponId.EPEE) {
     switch (q) {
-      case Quadrant.NW: return 'Masque(面罩)';
-      case Quadrant.NE: return 'Poignet(手腕)';
-      case Quadrant.SW: return 'Corps(躯干)';
-      case Quadrant.SE: return 'Pied(脚面)';
-      default:          return 'Poignet(手腕)';
+      case Quadrant.NW: return 'Masque(Mask 面罩)';
+      case Quadrant.NE: return 'Poignet(Wrist 手腕)';
+      case Quadrant.SW: return 'Corps(Body 躯干)';
+      case Quadrant.SE: return 'Pied(Foot 脚面)';
+      default:          return 'Poignet(Wrist 手腕)';
     }
   }
   switch (q) {
@@ -89,20 +89,20 @@ function getQuadrantShort(q, weapon = state.selectedWeapon) {
 
 function getSabreCutName(q) {
   switch (q) {
-    case Quadrant.NW: return 'Coup à la Tête (当头直劈面罩!)';
-    case Quadrant.NE: return 'Coup à la Manche (外线挥斩前臂!)';
-    case Quadrant.SW: return 'Coup à la Figure (内线横斩面胸!)';
-    case Quadrant.SE: return 'Coup au Flanc (下线斜撩侧肋!)';
-    default:          return 'Coup de Taille (佩剑挥斩!)';
+    case Quadrant.NW: return 'Coup à la Tête (Head Cut · 当头直劈!)';
+    case Quadrant.NE: return 'Coup à la Manche (Arm Cut · 外线斩臂!)';
+    case Quadrant.SW: return 'Coup à la Figure (Cheek Cut · 内线横斩!)';
+    case Quadrant.SE: return 'Coup au Flanc (Flank Cut · 下线撩肋!)';
+    default:          return 'Coup de Taille (Sabre Slash · 佩剑挥斩!)';
   }
 }
 
 function getEpeeTargetName(q) {
   switch (q) {
-    case Quadrant.NE: return 'Saignée au Poignet (重剑远距狙腕!)';
-    case Quadrant.NW: return 'Touche au Masque (重剑点刺面罩!)';
-    case Quadrant.SE: return 'Touche au Pied (重剑下潜点脚!)';
-    default:          return 'Botti au Corps (重剑深刺躯干!)';
+    case Quadrant.NE: return 'Saignée au Poignet (Wrist Snipe · 远距狙腕!)';
+    case Quadrant.NW: return 'Touche au Masque (Mask Thrust · 点刺面罩!)';
+    case Quadrant.SE: return 'Touche au Pied (Foot Touch · 下潜点脚!)';
+    default:          return 'Botti au Corps (Deep Torso Hit · 深刺躯干!)';
   }
 }
 
@@ -642,15 +642,15 @@ function selectWeaponDiscipline(wType, silent = false) {
   });
 
   if (wType === WeaponId.SABRE) {
-    setDomText(DOM.quadNW, '5顶');
-    setDomText(DOM.quadNE, '3右');
-    setDomText(DOM.quadSW, '4左');
-    setDomText(DOM.quadSE, '2肋');
+    setDomText(DOM.quadNW, '5T');
+    setDomText(DOM.quadNE, '3R');
+    setDomText(DOM.quadSW, '4L');
+    setDomText(DOM.quadSE, '2F');
   } else if (wType === WeaponId.EPEE) {
-    setDomText(DOM.quadNW, '面');
-    setDomText(DOM.quadNE, '腕');
-    setDomText(DOM.quadSW, '胸');
-    setDomText(DOM.quadSE, '脚');
+    setDomText(DOM.quadNW, 'M');
+    setDomText(DOM.quadNE, 'W');
+    setDomText(DOM.quadSW, 'B');
+    setDomText(DOM.quadSE, 'F');
   } else {
     setDomText(DOM.quadNW, '4');
     setDomText(DOM.quadNE, '6');
@@ -672,20 +672,20 @@ function selectWeaponDiscipline(wType, silent = false) {
     DOM.watermarkSpecBox.classList.add('telemetry-pulse');
   }
   if (wType === WeaponId.SABRE) {
-    setDomText(DOM.watermarkWeaponTitle, 'SABRE · 佩剑 (ARME DE TAILLE)');
-    setDomText(DOM.watermarkSpec1, 'CONTRE-TAILLE 拼刀');
+    setDomText(DOM.watermarkWeaponTitle, 'SABRE · ARME DE TAILLE (佩剑)');
+    setDomText(DOM.watermarkSpec1, 'CONTRE-TAILLE CLASH · 拼刀');
     setDomText(DOM.watermarkSpec2, '170ms ±10ms');
-    setDomText(DOM.watermarkSpec3, 'PRIORITÉ + 腰上有效');
+    setDomText(DOM.watermarkSpec3, 'PRIORITÉ · WAIST-UP 腰上');
   } else if (wType === WeaponId.EPEE) {
-    setDomText(DOM.watermarkWeaponTitle, 'ÉPÉE · 重剑 (FULL TARGET)');
+    setDomText(DOM.watermarkWeaponTitle, 'ÉPÉE · FULL TARGET (重剑)');
     setDomText(DOM.watermarkSpec1, '> 7.35N (750gf)');
     setDomText(DOM.watermarkSpec2, '45ms LIVE BOX');
-    setDomText(DOM.watermarkSpec3, 'COQUILLE + 双灯');
+    setDomText(DOM.watermarkSpec3, 'COQUILLE + DOUBLE 双灯');
   } else {
-    setDomText(DOM.watermarkWeaponTitle, 'FLEURET · 花剑 (FOIL)');
+    setDomText(DOM.watermarkWeaponTitle, 'FOIL · FLEURET (花剑)');
     setDomText(DOM.watermarkSpec1, '> 4.90N (500gf)');
-    setDomText(DOM.watermarkSpec2, 'FORTE/FOIBLE 抗剑');
-    setDomText(DOM.watermarkSpec3, 'PRIORITÉ 优先权');
+    setDomText(DOM.watermarkSpec2, 'FORTE/FOIBLE · 抗剑');
+    setDomText(DOM.watermarkSpec3, 'PRIORITÉ · 优先权');
   }
 
   state.quadrant = getQuadrant(state.guardX, state.guardY, wType);

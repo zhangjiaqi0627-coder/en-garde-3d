@@ -4,12 +4,12 @@
   Open-Source Release (MIT License)
   Disclosure: Human-directed design & fencing ruleset curation; AI-assisted code, 3D procedural modeling & visual asset generation.
 -->
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="generator" content="Human-Directed, AI-Assisted Development" />
-  <title>EN GARDE 3D · PARIS GRAND PALAIS — 全剑种击剑竞技与战术学院</title>
+  <title>EN GARDE 3D · PARIS GRAND PALAIS — 3D Olympic Fencing Simulator · 全剑种击剑模拟</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <link rel="stylesheet" href="./styles/fencing.css" />
@@ -48,21 +48,21 @@
     
     <!-- Top-Right Chamfered Broadcast Utility Strip -->
     <div class="fixed top-2.5 right-3 z-20 flex items-center gap-1.5 pointer-events-auto">
-      <button id="btnOpenFlashcards" class="broadcast-tab px-3 py-1 text-emerald-300 text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5" title="打开中/英/法击剑术语词典">
+      <button id="btnOpenFlashcards" class="broadcast-tab px-3 py-1 text-emerald-300 text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5" title="Open FIE Trilingual Fencing Lexicon · 打开击剑术语词典">
         <svg class="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span>LEXIQUE · 术语词卡</span>
+        <span>LEXICON · 词卡</span>
       </button>
       <button id="btnStartTutorial" class="broadcast-tab px-3 py-1 text-amber-300 text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span>ACADEMY · 教学</span>
       </button>
-      <button id="btnToggleTouchHud" class="broadcast-tab px-3 py-1 text-slate-300 text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5" title="显示/隐藏触屏按键">
+      <button id="btnToggleTouchHud" class="broadcast-tab px-3 py-1 text-slate-300 text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5" title="Show / Hide Touch Controls · 显示/隐藏触屏按键">
         <svg class="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         <span>TOUCH · 触控</span>
       </button>
       <button id="btnOpenSettings" class="broadcast-tab px-3 py-1 text-white text-[11px] font-athletic font-bold tracking-wider uppercase flex items-center gap-1.5">
         <svg class="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        <span>MENU · 赛事面板</span>
+        <span>MENU · 菜单</span>
       </button>
     </div>
 
@@ -74,12 +74,12 @@
           <div class="w-1 h-8 bg-emerald-400"></div>
           <div class="flex flex-col gap-0.5 items-center">
             <div id="lampPlayer" class="w-10 h-3.5 bg-slate-900 border border-slate-700 transition-all duration-150"></div>
-            <div id="lampPlayerWhite" class="w-5 h-1.5 bg-slate-900 border border-slate-800 transition-all duration-150" title="Hors Cible (白灯)"></div>
+            <div id="lampPlayerWhite" class="w-5 h-1.5 bg-slate-900 border border-slate-800 transition-all duration-150" title="Off-Target / Hors Cible · 白灯"></div>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5">
               <span id="p1TitleLabel" class="text-xs uppercase tracking-widest text-emerald-400 font-athletic font-extrabold truncate">YOU · CHALLENGER</span>
-              <span id="priorityPlayerBadge" class="hidden px-1 py-0.2 bg-emerald-500 text-slate-950 text-[8px] font-mono-tech font-black" title="Priorité">PRI</span>
+              <span id="priorityPlayerBadge" class="hidden px-1 py-0.2 bg-emerald-500 text-slate-950 text-[8px] font-mono-tech font-black" title="Right-of-Way / Priorité">PRI</span>
               <span id="cardPlayerBadge" class="hidden px-1 bg-amber-400 text-slate-950 text-[8px] font-mono-tech font-black">CARD</span>
             </div>
             <div class="w-20 h-1 bg-slate-900 overflow-hidden mt-0.5">
@@ -94,7 +94,7 @@
 
         <!-- Center Match Module -->
         <div class="flex flex-col items-center justify-center px-3.5 border-x border-slate-800">
-          <button id="weaponModeBadge" type="button" class="cursor-pointer text-[10px] uppercase tracking-widest px-2 py-0.2 bg-amber-500/20 text-amber-300 font-athletic font-extrabold border border-amber-400/40 hover:bg-amber-500/30 transition" title="点击切换剑种 (花剑 / 重剑 / 佩剑)">FLEURET · 花剑</button>
+          <button id="weaponModeBadge" type="button" class="cursor-pointer text-[10px] uppercase tracking-widest px-2 py-0.2 bg-amber-500/20 text-amber-300 font-athletic font-extrabold border border-amber-400/40 hover:bg-amber-500/30 transition" title="Click to switch weapon (Foil / Épée / Sabre) · 点击切换剑种">FLEURET · FOIL 花剑</button>
           <div id="clockDisplay" class="text-xl font-mono-tech font-extrabold text-white tabular-nums leading-tight mt-0.5">03:00</div>
           <div id="stripPosText" class="text-[9px] text-slate-400 font-mono-tech tracking-wider">DIST 2.60m</div>
         </div>
@@ -105,7 +105,7 @@
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-end gap-1.5">
               <span id="cardAiBadge" class="hidden px-1 bg-amber-400 text-slate-950 text-[8px] font-mono-tech font-black">CARD</span>
-              <span id="priorityAiBadge" class="hidden px-1 py-0.2 bg-rose-500 text-white text-[8px] font-mono-tech font-black" title="Priorité">PRI</span>
+              <span id="priorityAiBadge" class="hidden px-1 py-0.2 bg-rose-500 text-white text-[8px] font-mono-tech font-black" title="Right-of-Way / Priorité">PRI</span>
               <span id="p2TitleLabel" class="text-xs uppercase tracking-widest text-rose-400 font-athletic font-extrabold truncate">ROSSI [ITA]</span>
             </div>
             <div class="w-20 h-1.5 bg-slate-950 relative border border-slate-800 overflow-hidden ml-auto mt-1">
@@ -116,7 +116,7 @@
           </div>
           <div class="flex flex-col gap-0.5 items-center">
             <div id="lampAI" class="w-10 h-3.5 bg-slate-900 border border-slate-700 transition-all duration-150"></div>
-            <div id="lampAIWhite" class="w-5 h-1.5 bg-slate-900 border border-slate-800 transition-all duration-150" title="Hors Cible (白灯)"></div>
+            <div id="lampAIWhite" class="w-5 h-1.5 bg-slate-900 border border-slate-800 transition-all duration-150" title="Off-Target / Hors Cible · 白灯"></div>
           </div>
           <div class="w-1 h-8 bg-rose-500"></div>
         </div>
@@ -131,15 +131,15 @@
           <div class="absolute left-1/2 top-0 bottom-0 w-px bg-slate-500 -translate-x-1/2"></div>
           <div id="rowPuck" class="row-tug-indicator w-2 h-2 bg-amber-300 absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-10" style="left: 50%"></div>
         </div>
-        <div id="rowReasonText" class="text-[10px] font-mono-tech font-bold text-slate-300 truncate max-w-[195px]">
-          NEUTRAL · 均势对峙
+        <div id="rowReasonText" class="text-[10px] font-mono-tech font-bold text-slate-300 truncate max-w-[205px]">
+          NEUTRAL · BALANCED · 均势
         </div>
       </div>
     </div>
 
     <!-- Match Point Alert -->
     <div id="matchPointBanner" class="hidden mt-1.5 px-4 py-0.5 bg-gradient-to-r from-rose-600 via-amber-500 to-rose-600 text-slate-950 font-athletic font-black italic text-xs tracking-widest uppercase shadow-lg match-point-pulse">
-      ⚡ BALLE DE MATCH // 赛点决胜剑 ⚡
+      ⚡ MATCH POINT // BALLE DE MATCH · 赛点 ⚡
     </div>
 
     <!-- Fighting-Game Style Rank & Combo Momentum HUD -->
@@ -156,7 +156,7 @@
     <!-- Referee Broadcast Callout Lower-Third Banner -->
     <div id="calloutBanner" class="mt-2 px-6 py-1.5 bg-slate-950/95 border-l-4 border-amber-400 border-y border-r border-slate-700/80 text-center shadow-2xl transition-all duration-200 opacity-0 scale-95 pointer-events-none">
       <span id="calloutTitle" class="text-sm sm:text-base font-athletic font-black italic tracking-widest uppercase text-amber-300 mr-2">EN GARDE!</span>
-      <span id="calloutSub" class="text-xs text-slate-200 font-medium">Prêts... Allez!</span>
+      <span id="calloutSub" class="text-xs text-slate-200 font-medium">Prêts... Allez! · Ready... Fence!</span>
     </div>
   </div>
 
@@ -167,26 +167,26 @@
     <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-slate-800">
       <div class="flex items-center gap-1.5">
         <span class="px-1.5 py-0.5 bg-amber-500 text-slate-950 font-mono-tech text-[9px] font-black" id="tutStepBadge">LESSON 1 / 7</span>
-        <span class="text-xs font-athletic font-black tracking-wider uppercase text-white">FENCING ACADEMY · 击剑学院</span>
+        <span class="text-xs font-athletic font-black tracking-wider uppercase text-white">FENCING ACADEMY · 学院</span>
       </div>
       <div class="flex items-center gap-1">
         <button id="btnToggleEncyclopedia" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold border border-cyan-500/40 transition">
-          战术图鉴
+          GUIDE · 图鉴
         </button>
         <button id="btnTutExit" class="px-2 py-0.5 bg-rose-950/80 hover:bg-rose-900 text-rose-200 text-[9px] font-bold border border-rose-500/40 transition">
-          退出教学
+          EXIT · 退出
         </button>
       </div>
     </div>
 
     <div class="mt-2">
-      <div id="tutLessonTitle" class="text-xs font-black text-amber-300">1. 四象限防线 (4/6/7/8)</div>
+      <div id="tutLessonTitle" class="text-xs font-black text-amber-300">1. Four Guard Quadrants (4/6/7/8) · 四象限防线</div>
       <p id="tutLessonTheory" class="text-[10px] text-slate-300 mt-0.5 leading-snug">
-        观察中央四向剑位环，平稳移动鼠标依次巡检四个防区。
+        Observe the 4-way guard ring and smoothly sweep your mouse across each defensive quadrant. 平稳移动鼠标依次巡检四个防区。
       </p>
       <div class="mt-2 p-2 bg-slate-950/90 border-l-2 border-emerald-400">
         <div class="flex items-center justify-between text-[10px] font-bold text-emerald-300 mb-1">
-          <span id="tutTaskPrompt" class="truncate pr-2">巡检 4、6、7、8 四个剑位</span>
+          <span id="tutTaskPrompt" class="truncate pr-2">Visit Guard Lines 4, 6, 7 & 8 · 巡检四防区</span>
           <span id="tutTaskCounter" class="font-mono-tech text-white shrink-0">0 / 4</span>
         </div>
         <div class="w-full h-1.5 bg-slate-900 overflow-hidden">
@@ -196,14 +196,14 @@
     </div>
 
     <div id="fencingEncyclopediaBox" class="hidden mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-300 space-y-1 max-h-36 overflow-y-auto">
-      <div>• <strong class="text-cyan-300">FLEURET 花剑</strong>：点刺武器，4/6/7/8四象限防线，仅金属背心有效，遵循优先权与亮剑威慑。</div>
-      <div>• <strong class="text-amber-300">ÉPÉE 重剑</strong>：点刺武器，全身有效（手腕最近可2.74m远距狙击），无优先权，40ms内互中双灯同得。</div>
-      <div>• <strong class="text-orange-300">SABRE 佩剑</strong>：<strong>劈砍武器 (Arme de Taille)</strong>！采用 <strong>Tierce(3右立)/Quarte(4左立)/Quinte(5横刀架顶)</strong>，大弧度挥砍腰线以上部位！</div>
+      <div>• <strong class="text-cyan-300">FOIL (Fleuret · 花剑)</strong>: Point-thrust weapon; 4/6/7/8 guard lines; conductive torso lamé only; Right-of-Way & Point-in-Line. (仅躯干背心有效·遵循优先权)</div>
+      <div>• <strong class="text-amber-300">ÉPÉE (重剑)</strong>: Point-thrust weapon; full-body valid target (2.74m wrist snipe); no Right-of-Way; 45ms double-touch lockout. (全身有效·狙腕与45ms双灯)</div>
+      <div>• <strong class="text-orange-300">SABRE (佩剑)</strong>: <strong>Edge & Point Cutting Weapon</strong>; Tierce(3)/Quarte(4)/Quinte(5 roof guard); waist-up valid target with Right-of-Way. (劈砍武器·5号架顶·腰上有效)</div>
     </div>
 
     <div class="mt-2.5 flex items-center justify-between gap-1">
       <button id="btnTutPrev" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition">◀ PREV</button>
-      <button id="btnTutResetStep" class="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-amber-200 text-[10px] font-semibold transition">RESET 重练</button>
+      <button id="btnTutResetStep" class="px-2.5 py-1 bg-slate-800/80 hover:bg-slate-700 text-amber-200 text-[10px] font-semibold transition">RESET · 重练</button>
       <button id="btnTutNext" class="px-2.5 py-1 bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 text-[10px] font-bold border border-amber-400/50 transition">NEXT ▶</button>
     </div>
   </div>
@@ -215,18 +215,18 @@
     
     <div id="touchControlsDrawer" class="hidden w-full flex items-end justify-between mb-2 pointer-events-auto">
       <div class="flex items-center gap-1.5">
-        <button id="btnRetreat" class="broadcast-tab px-3.5 py-2 active:scale-95 text-xs font-athletic font-bold text-slate-100">◀ ROMPRE · 后撤</button>
+        <button id="btnRetreat" class="broadcast-tab px-3.5 py-2 active:scale-95 text-xs font-athletic font-bold text-slate-100">◀ RETREAT · 后撤</button>
         <div class="flex flex-col gap-1">
-          <button id="btnJump" class="px-2.5 py-1 bg-indigo-950/90 text-[10px] font-athletic font-bold text-indigo-200 border border-indigo-400/50">▲ BOND 跃起(W)</button>
-          <button id="btnDuck" class="px-2.5 py-1 bg-amber-950/90 text-[10px] font-athletic font-bold text-amber-200 border border-amber-400/50">▼ ESQUIVE 下蹲(S)</button>
+          <button id="btnJump" class="px-2.5 py-1 bg-indigo-950/90 text-[10px] font-athletic font-bold text-indigo-200 border border-indigo-400/50">▲ JUMP (W) · 跃起</button>
+          <button id="btnDuck" class="px-2.5 py-1 bg-amber-950/90 text-[10px] font-athletic font-bold text-amber-200 border border-amber-400/50">▼ DUCK (S) · 下蹲</button>
         </div>
-        <button id="btnAdvance" class="broadcast-tab px-3.5 py-2 active:scale-95 text-xs font-athletic font-bold text-slate-100">MARCHE · 前进 ▶</button>
+        <button id="btnAdvance" class="broadcast-tab px-3.5 py-2 active:scale-95 text-xs font-athletic font-bold text-slate-100">ADVANCE · 前进 ▶</button>
       </div>
 
       <div class="flex items-center gap-1.5">
-        <button id="btnParry" class="broadcast-tab px-4 py-2 bg-sky-700/90 text-xs font-athletic font-bold text-white border-sky-400/60">PARADE · 格挡</button>
+        <button id="btnParry" class="broadcast-tab px-4 py-2 bg-sky-700/90 text-xs font-athletic font-bold text-white border-sky-400/60">PARRY · 格挡</button>
         <button id="btnLunge" class="cta-strike-btn px-5 py-2 text-xs font-athletic font-black uppercase">
-          <span class="unskew inline-block">ATTAQUE · 出剑</span>
+          <span class="unskew inline-block">STRIKE · 出剑</span>
         </button>
       </div>
     </div>
@@ -244,13 +244,13 @@
           <div id="hudGuardDot" class="w-2.5 h-2.5 rounded-full bg-cyan-400 border border-white absolute" style="left:50%; top:50%; transform:translate(-50%,-50%)"></div>
         </div>
         <div class="text-left pr-1">
-          <div id="guardNameText" class="text-xs font-extrabold text-amber-300 font-mono-tech leading-tight">Sixte (6) · 上外线</div>
-          <div id="rightOfWayText" class="text-[10px] text-slate-400 font-medium leading-tight">WASD 进退跳蹲 · 左键出剑 · 右键弹反</div>
+          <div id="guardNameText" class="text-xs font-extrabold text-amber-300 font-mono-tech leading-tight">Sixte (6) · High Outside · 上外线</div>
+          <div id="rightOfWayText" class="text-[10px] text-slate-400 font-medium leading-tight">WASD Move/Dodge · LMB Strike · RMB Parry · 进退与攻防</div>
         </div>
       </div>
 
       <!-- COUP DE MAÎTRE Signature Masterstrike Gauge -->
-      <button id="btnMasterStrike" class="broadcast-tab px-3.5 py-2 flex flex-col justify-center min-w-[154px] text-left border border-slate-700 transition" title="积满绝技槽后按 E 键或点击释放本剑种奥林匹克绝技">
+      <button id="btnMasterStrike" class="broadcast-tab px-3.5 py-2 flex flex-col justify-center min-w-[154px] text-left border border-slate-700 transition" title="Press E or click at 100% gauge to unleash your Olympic Masterstrike · 满槽按 E 释放绝技">
         <div class="flex items-center justify-between gap-2 w-full">
           <span id="masterStrikeText" class="text-[10px] font-athletic font-black italic uppercase tracking-wider text-slate-300">[E] COUP DE MAÎTRE 0%</span>
           <span class="text-[9px] font-mono-tech font-bold text-amber-300">SUPER</span>
@@ -264,7 +264,7 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- FIE TRILINGUAL LEXICON & AUDIO QUIZ MODAL (中 / 英 / 法 击剑术语词典)  -->
+  <!-- FIE TRILINGUAL LEXICON & AUDIO QUIZ MODAL (FR / EN / ZH GLOSSARY)     -->
   <!-- ===================================================================== -->
   <div id="flashcardModalOverlay" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md overflow-y-auto">
     <div class="glass-panel max-w-2xl w-full p-5 sm:p-6 shadow-2xl border-t-4 border-amber-400 text-slate-100 relative my-auto">
@@ -272,24 +272,24 @@
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-amber-500/15 border-l-2 border-amber-400 flex items-center justify-center text-amber-300 font-athletic font-black text-sm">FIE</div>
           <div>
-            <h2 class="text-base sm:text-lg font-athletic font-black tracking-wider uppercase text-white leading-tight">LEXIQUE OFFICIEL · 中 / 英 / 法 击剑术语词典</h2>
-            <p class="text-[11px] text-slate-400">FIE Trilingual Tactical Lexicon · 点击发音按钮直接试听法语/英语执裁口令</p>
+            <h2 class="text-base sm:text-lg font-athletic font-black tracking-wider uppercase text-white leading-tight">FIE OFFICIAL LEXICON · 法 / 英 / 中 击剑术语词典</h2>
+            <p class="text-[11px] text-slate-400">Trilingual Tactical Glossary — Click audio buttons to listen to French & English referee commands · 点击发音试听</p>
           </div>
         </div>
         <div class="flex items-center gap-1.5">
-          <button id="btnFcModeStudy" class="px-3 py-1 bg-emerald-500/20 text-emerald-300 border-l-2 border-emerald-400 text-[11px] font-athletic font-bold uppercase transition">LEXICON 词卡识记</button>
-          <button id="btnFcModeQuiz" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border-l-2 border-slate-600 text-[11px] font-athletic font-bold uppercase transition">AUDIO QUIZ 听音测验</button>
-          <button id="btnCloseFlashcards" class="px-3 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/40 text-[11px] font-athletic font-bold uppercase transition">CLOSE 关闭</button>
+          <button id="btnFcModeStudy" class="px-3 py-1 bg-emerald-500/20 text-emerald-300 border-l-2 border-emerald-400 text-[11px] font-athletic font-bold uppercase transition">LEXICON · 词卡</button>
+          <button id="btnFcModeQuiz" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border-l-2 border-slate-600 text-[11px] font-athletic font-bold uppercase transition">AUDIO QUIZ · 测验</button>
+          <button id="btnCloseFlashcards" class="px-3 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-500/40 text-[11px] font-athletic font-bold uppercase transition">CLOSE · 关闭</button>
         </div>
       </div>
 
       <div class="flex items-center justify-between gap-1.5 mt-3 flex-wrap">
         <div class="flex items-center gap-1 flex-wrap">
-          <button data-fccat="all" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-amber-500/20 text-amber-300 border-l-2 border-amber-400">ALL 全部 (24)</button>
-          <button data-fccat="referee" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">REFEREE 裁判口令</button>
-          <button data-fccat="guard" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">PARADE 防线与格挡</button>
-          <button data-fccat="attack" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">ATTAQUE 步法与进攻</button>
-          <button data-fccat="rules" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">RÈGLEMENT 剑种与规则</button>
+          <button data-fccat="all" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-amber-500/20 text-amber-300 border-l-2 border-amber-400">ALL · 全部 (24)</button>
+          <button data-fccat="referee" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">REFEREE · 裁判口令</button>
+          <button data-fccat="guard" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">PARRY · 防线格挡</button>
+          <button data-fccat="attack" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">ATTACK · 步法进攻</button>
+          <button data-fccat="rules" class="fc-cat-btn px-2.5 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 border-l-2 border-slate-700">RULES · 剑种规则</button>
         </div>
         <span id="fcMasteredCountBadge" class="text-[10px] font-mono-tech text-emerald-400 font-bold">MASTERED: 0 / 24</span>
       </div>
@@ -297,10 +297,10 @@
       <div id="fcStudyView" class="mt-3">
         <div id="fcCardBox" class="bg-slate-900/95 p-5 border border-slate-700/80 shadow-xl relative">
           <div class="flex items-center justify-between text-[11px] mb-3">
-            <span id="fcCategoryBadge" class="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 font-mono-tech font-bold border-l-2 border-cyan-400">裁判口令 · REFEREE</span>
+            <span id="fcCategoryBadge" class="px-2 py-0.5 bg-cyan-500/20 text-cyan-300 font-mono-tech font-bold border-l-2 border-cyan-400">REFEREE · 裁判口令</span>
             <div class="flex items-center gap-2">
               <span id="fcIndexLabel" class="font-mono-tech text-slate-400 font-bold">1 / 24</span>
-              <button id="btnFcToggleMaster" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 text-[10px] font-bold transition">☆ 标记已掌握</button>
+              <button id="btnFcToggleMaster" class="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 text-[10px] font-bold transition">☆ MARK MASTERED · 标记</button>
             </div>
           </div>
 
@@ -309,14 +309,14 @@
               <div>
                 <span class="text-[10px] font-mono-tech uppercase text-indigo-300 font-bold">FRANÇAIS (FIE OFFICIAL)</span>
                 <div id="fcTermFr" class="text-xl font-black text-white mt-1 tracking-tight">En garde !</div>
-                <div id="fcPhoneticFr" class="text-[11px] font-mono-tech text-indigo-200/80 mt-0.5">[ɑ̃ ɡaʁd] · 昂-嘎赫德</div>
+                <div id="fcPhoneticFr" class="text-[11px] font-mono-tech text-indigo-200/80 mt-0.5">[ɑ̃ ɡaʁd] · ahn-gard · 昂-嘎赫德</div>
               </div>
               <button id="btnSpeakFr" class="mt-2.5 w-full py-1.5 bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-200 border border-indigo-400/40 text-[11px] font-bold transition">AUDIO FR · 法语发音</button>
             </div>
 
             <div class="p-3 bg-sky-950/45 border-l-2 border-sky-400 flex flex-col justify-between">
               <div>
-                <span class="text-[10px] font-mono-tech uppercase text-sky-300 font-bold">ENGLISH (COMMAND)</span>
+                <span class="text-[10px] font-mono-tech uppercase text-sky-300 font-bold">ENGLISH (MEANING)</span>
                 <div id="fcTermEn" class="text-xl font-black text-white mt-1 tracking-tight">On Guard!</div>
                 <div id="fcSubEn" class="text-[11px] text-sky-200/80 mt-0.5">Ready Stance</div>
               </div>
@@ -325,34 +325,34 @@
 
             <div class="p-3 bg-emerald-950/45 border-l-2 border-emerald-400 flex flex-col justify-between">
               <div>
-                <span class="text-[10px] font-mono-tech uppercase text-emerald-300 font-bold">CHINESE (中文释义)</span>
+                <span class="text-[10px] font-mono-tech uppercase text-emerald-300 font-bold">CHINESE (中文对照)</span>
                 <div id="fcTermZh" class="text-xl font-black text-emerald-300 mt-1 tracking-tight">实战姿势</div>
                 <div id="fcSubZh" class="text-[11px] text-emerald-100/80 mt-0.5">每回合开局口令</div>
               </div>
-              <button id="btnSpeakExample" class="mt-2.5 w-full py-1.5 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-400/40 text-[11px] font-bold transition">PHRASE · 完整判词发音</button>
+              <button id="btnSpeakExample" class="mt-2.5 w-full py-1.5 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 border border-emerald-400/40 text-[11px] font-bold transition">FULL PHRASE · 完整判词</button>
             </div>
           </div>
 
           <div class="mt-3 p-3 bg-slate-950/90 border border-slate-800 text-xs space-y-1.5">
             <div class="flex items-start gap-2">
-              <span class="text-amber-300 font-bold shrink-0">TACTICAL NOTE：</span>
-              <span id="fcUsageDesc" class="text-slate-200 leading-relaxed">裁判宣布比赛或每一剑开始的第一声指令。</span>
+              <span class="text-amber-300 font-bold shrink-0">TACTICAL NOTE:</span>
+              <span id="fcUsageDesc" class="text-slate-200 leading-relaxed">Opening referee command before every touch; fencers take their en-garde stance behind the lines. 每一剑开局口令。</span>
             </div>
             <div class="flex items-start gap-2">
-              <span class="text-cyan-300 font-bold shrink-0">FIE CALLOUT：</span>
+              <span class="text-cyan-300 font-bold shrink-0">FIE CALLOUT:</span>
               <span id="fcExampleSentence" class="text-cyan-100 font-mono-tech">"En garde ! ... Prêts ? ... Allez !"</span>
             </div>
             <div class="flex items-center justify-between pt-1.5 border-t border-slate-800 text-[11px]">
-              <span id="fcControlHint" class="text-slate-400">对应机制：开局三拍执裁口令第 1 拍</span>
-              <button id="btnTryInArena" class="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-400/40 font-bold transition">PRACTICE IN PISTE · 实战演练 ▸</button>
+              <span id="fcControlHint" class="text-slate-400">In-Game: Beat 1 of the 3-step opening cadence · 开局三拍口令第 1 拍</span>
+              <button id="btnTryInArena" class="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-400/40 font-bold transition">PRACTICE ON PISTE · 演练 ▸</button>
             </div>
           </div>
         </div>
 
         <div class="mt-3.5 flex items-center justify-between gap-2">
-          <button id="btnFcPrev" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition">◀ PREV 上一张</button>
-          <button id="btnFcShuffle" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700 transition">SHUFFLE 随机抽卡</button>
-          <button id="btnFcNext" class="px-4 py-2 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 text-xs font-bold border border-emerald-400/50 transition">NEXT 下一张 ▶</button>
+          <button id="btnFcPrev" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition">◀ PREV · 上一张</button>
+          <button id="btnFcShuffle" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-amber-300 text-xs font-bold border border-slate-700 transition">SHUFFLE · 随机</button>
+          <button id="btnFcNext" class="px-4 py-2 bg-emerald-500/25 hover:bg-emerald-500/40 text-emerald-200 text-xs font-bold border border-emerald-400/50 transition">NEXT · 下一张 ▶</button>
         </div>
       </div>
 
@@ -364,23 +364,23 @@
           </div>
 
           <div class="p-4 bg-slate-950 border border-slate-800 text-center my-2">
-            <div class="text-[11px] text-slate-400">请听法语/英语执裁口令并选择正确的战术释义：</div>
+            <div class="text-[11px] text-slate-400">Listen to the FIE French command and select the matching tactical meaning · 听执裁口令选择正确释义：</div>
             <div id="fcQuizPromptFr" class="text-2xl font-black text-white mt-1.5">Parade-Riposte !</div>
             <div id="fcQuizPromptEn" class="text-xs font-mono-tech text-cyan-300 mt-0.5">Parry-Riposte · [pa.ʁad ʁi.pɔst]</div>
             <button id="btnQuizReplayAudio" class="mt-2.5 px-4 py-1.5 bg-indigo-500/30 hover:bg-indigo-500/45 text-indigo-200 border border-indigo-400/50 text-xs font-bold transition">REPLAY AUDIO · 重播发音</button>
           </div>
 
           <div id="fcQuizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
-            <button data-qopt="0" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">A. 选项 1</button>
-            <button data-qopt="1" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">B. 选项 2</button>
-            <button data-qopt="2" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">C. 选项 3</button>
-            <button data-qopt="3" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">D. 选项 4</button>
+            <button data-qopt="0" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">A. Option 1</button>
+            <button data-qopt="1" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">B. Option 2</button>
+            <button data-qopt="2" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">C. Option 3</button>
+            <button data-qopt="3" class="fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition">D. Option 4</button>
           </div>
 
-          <div id="fcQuizFeedback" class="mt-3 text-center text-xs font-bold text-slate-300 min-h-[20px]">点击上方四个选项作答</div>
+          <div id="fcQuizFeedback" class="mt-3 text-center text-xs font-bold text-slate-300 min-h-[20px]">Select one of the four options above · 点击选项作答</div>
 
           <div class="mt-2 flex justify-end">
-            <button id="btnQuizNextQuestion" class="px-4 py-1.5 bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-400/50 text-xs font-bold transition">NEXT QUESTION 下一题 ▶</button>
+            <button id="btnQuizNextQuestion" class="px-4 py-1.5 bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-400/50 text-xs font-bold transition">NEXT QUESTION · 下一题 ▶</button>
           </div>
         </div>
       </div>
@@ -403,7 +403,7 @@
 
       <div class="flex items-center justify-between gap-4 mt-4 pb-4 border-b border-slate-800">
         <div>
-          <h2 id="podiumTitleText" class="text-4xl font-athletic font-black italic uppercase text-white leading-none">VICTOIRE // 荣膺桂冠!</h2>
+          <h2 id="podiumTitleText" class="text-4xl font-athletic font-black italic uppercase text-white leading-none">VICTORY // CHAMPION · 夺冠!</h2>
           <div id="podiumScoreText" class="text-3xl font-mono-tech font-black text-amber-300 mt-1">5 : 2</div>
         </div>
         <div class="text-center px-4 py-2 bg-slate-900 border border-slate-700">
@@ -415,17 +415,17 @@
       <div class="flex items-center gap-3 my-4 p-3 bg-slate-900/90 border-l-4 border-amber-400">
         <img id="podiumRivalImg" src="./assets/rival_elena.jpg" alt="Rival" class="w-14 h-14 object-cover border border-slate-600 shrink-0 max-w-full" />
         <div class="text-xs italic text-slate-200 leading-relaxed" id="podiumQuoteText">
-          "Incredibile… 居然能看穿我的双重变线！"
+          "Incredibile… You read right through my double disengage! · 居然看穿了我的双重变线！"
         </div>
       </div>
 
       <div class="grid grid-cols-4 gap-2 mb-5 text-center">
         <div class="p-2 bg-slate-900/80 border border-slate-800">
-          <div class="text-[9px] font-mono-tech text-slate-400">PARRIES 格挡</div>
+          <div class="text-[9px] font-mono-tech text-slate-400">PARRIES · 格挡</div>
           <div id="podiumStatParries" class="text-lg font-mono-tech font-black text-cyan-300">4</div>
         </div>
         <div class="p-2 bg-slate-900/80 border border-slate-800">
-          <div class="text-[9px] font-mono-tech text-slate-400">RIPOSTES 防反</div>
+          <div class="text-[9px] font-mono-tech text-slate-400">RIPOSTES · 防反</div>
           <div id="podiumStatRipostes" class="text-lg font-mono-tech font-black text-emerald-300">3</div>
         </div>
         <div class="p-2 bg-slate-900/80 border border-slate-800">
@@ -440,13 +440,13 @@
 
       <div class="flex flex-col sm:flex-row gap-2">
         <button id="btnPodiumRematch" class="cta-strike-btn flex-1 py-3 px-4 font-athletic font-black italic text-sm uppercase tracking-wider">
-          <span class="unskew block">REMATCH · 立即再战一局 ▸</span>
+          <span class="unskew block">REMATCH · 再战一局 ▸</span>
         </button>
         <button id="btnPodiumNextRival" class="skew-plate py-3 px-4 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-athletic font-black uppercase text-xs tracking-wider transition">
-          <span class="unskew block">NEXT RIVAL · 挑战下一位宗师</span>
+          <span class="unskew block">NEXT RIVAL · 下一位挑战者</span>
         </button>
         <button id="btnPodiumMenu" class="skew-plate py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-athletic font-bold uppercase text-xs tracking-wider transition">
-          <span class="unskew block">MENU · 赛事大厅</span>
+          <span class="unskew block">MAIN MENU · 大厅</span>
         </button>
       </div>
     </div>
@@ -472,7 +472,7 @@
           </div>
 
           <div class="flex items-center gap-1 flex-wrap justify-end">
-            <span id="grandSlamBadge" class="px-2 py-0.5 bg-amber-400/15 text-amber-300 border border-amber-400/40 text-[9px] font-mono-tech font-black" title="击败三位挑战者的三种剑种收集全满贯金牌">
+            <span id="grandSlamBadge" class="px-2 py-0.5 bg-amber-400/15 text-amber-300 border border-amber-400/40 text-[9px] font-mono-tech font-black" title="Defeat all 3 challengers across all 3 weapons to earn the 9-Medal Grand Slam · 击败三位挑战者的全剑种收集满贯金牌">
               TROPHIES: 0/9
             </span>
             <button id="btnToggleBgm" class="px-2 py-0.5 bg-slate-900 hover:bg-slate-800 text-cyan-300 text-[9px] font-mono-tech font-bold border border-cyan-400/40 transition">BGM: ON</button>
@@ -495,7 +495,7 @@
               EN GARDE <span class="text-amber-400">//</span> 3D
             </h1>
             <p id="modalSubtitle" class="text-[10px] text-slate-200 font-medium mt-0.5 border-l-2 border-amber-400 pl-2 truncate">
-              真3D强弱剑身力矩碰撞 · 护手盘弹开 · 45ms电审闭锁与二次补刺
+              3D Forte/Foible Leverage · Bell-Guard Ricochet · 45ms Lockout & Remise · 真3D剑术物理
             </p>
           </div>
         </div>
@@ -509,34 +509,34 @@
             <button id="modeBtn1P" data-mode="1p" class="mode-btn skew-plate text-left p-2 bg-gradient-to-r from-cyan-950/90 to-slate-900/95 border-l-4 border-cyan-400 border-y border-r border-slate-700/80 transition">
               <div class="unskew">
                 <div class="text-[9px] font-mono-tech font-bold text-cyan-400">01 / SOLO</div>
-                <div class="text-xs font-athletic font-black uppercase text-white">1P 锦标赛</div>
+                <div class="text-xs font-athletic font-black uppercase text-white">1P CHAMPIONSHIP · 锦标赛</div>
               </div>
             </button>
             <button id="modeBtn2P" data-mode="2p" class="mode-btn skew-plate text-left p-2 bg-slate-900/80 hover:bg-slate-800/90 border-l-4 border-slate-700 border-y border-r border-slate-800 transition">
               <div class="unskew">
                 <div class="text-[9px] font-mono-tech font-bold text-indigo-400">02 / VERSUS</div>
-                <div class="text-xs font-athletic font-black uppercase text-indigo-100">2P 双人同屏</div>
+                <div class="text-xs font-athletic font-black uppercase text-indigo-100">2P SPLIT-SCREEN · 双人</div>
               </div>
             </button>
             <button id="modeBtnTutorial" data-mode="tutorial" class="mode-btn skew-plate text-left p-2 bg-slate-900/80 hover:bg-slate-800/90 border-l-4 border-amber-500/60 border-y border-r border-slate-800 transition">
               <div class="unskew">
                 <div class="text-[9px] font-mono-tech font-bold text-amber-400">03 / DRILLS</div>
-                <div class="text-xs font-athletic font-black uppercase text-amber-200">ACADEMY 学院</div>
+                <div class="text-xs font-athletic font-black uppercase text-amber-200">ACADEMY · 教学学院</div>
               </div>
             </button>
           </div>
         </div>
 
         <div id="twoPlayerGuideBox" class="hidden mb-2.5 p-2 bg-indigo-950/50 border-l-4 border-indigo-400 text-[10px] text-slate-200">
-          <div><strong class="text-emerald-400 font-mono-tech">GAUCHE P1</strong>：WASD 进退跳蹲 · 鼠标/1-4 控剑 · 左键/Space 出剑 · 右键/F 格挡</div>
-          <div><strong class="text-rose-400 font-mono-tech">DROITE P2</strong>：方向键 进退跳蹲 · IJKL 控剑 · Enter/J 出剑 · P 格挡</div>
+          <div><strong class="text-emerald-400 font-mono-tech">LEFT P1 (左屏)</strong>: WASD Move/Jump/Duck · Mouse/1-4 Guard · LMB/Space Strike · RMB/F Parry</div>
+          <div><strong class="text-rose-400 font-mono-tech">RIGHT P2 (右屏)</strong>: Arrow Keys Move/Jump/Duck · IJKL Guard · Enter/J Strike · P Parry</div>
         </div>
 
         <!-- 02 // WEAPON DISCIPLINE (Illustrated Key-Art Poster Cards) -->
         <div class="mb-2.5">
           <div class="flex items-center justify-between mb-1">
             <span class="text-[10px] font-athletic font-extrabold uppercase tracking-widest text-slate-400">02 // WEAPON DISCIPLINE · 剑种体系</span>
-            <span id="weaponChannelNotice" class="text-[9px] font-mono-tech text-cyan-300 font-bold truncate max-w-[260px]">花剑：4/6/7/8四象限点刺 · 仅背心有效 · 优先权</span>
+            <span id="weaponChannelNotice" class="text-[9px] font-mono-tech text-cyan-300 font-bold truncate max-w-[285px]">Foil: 4.9N Tip · Forte Leverage · Torso Lamé & Right-of-Way · 花剑</span>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <div id="cardFoil" data-weapon="foil" class="weapon-card cursor-pointer border-2 border-cyan-400 weapon-card-active-glow-cyan bg-slate-950 group">
@@ -546,8 +546,8 @@
                 <span id="badgeFoilStatus" class="absolute top-1 right-1 px-1.5 py-0.2 bg-cyan-400 text-slate-950 text-[8px] font-mono-tech font-black">ACTIVE</span>
               </div>
               <div class="p-1.5 bg-slate-950/95">
-                <div class="text-xs font-athletic font-black italic uppercase text-white leading-tight">FLEURET · 花剑</div>
-                <div class="text-[9px] text-cyan-300 truncate">亮剑先手 · 背心优先权</div>
+                <div class="text-xs font-athletic font-black italic uppercase text-white leading-tight">FOIL · 花剑</div>
+                <div class="text-[9px] text-cyan-300 truncate">Right-of-Way · Torso Lamé · 优先权</div>
               </div>
             </div>
 
@@ -559,7 +559,7 @@
               </div>
               <div class="p-1.5 bg-slate-950/95">
                 <div class="text-xs font-athletic font-black italic uppercase text-amber-200 leading-tight">ÉPÉE · 重剑</div>
-                <div class="text-[9px] text-amber-200/80 truncate">2.74m狙腕 · 40ms双灯</div>
+                <div class="text-[9px] text-amber-200/80 truncate">2.74m Wrist Snipe · 45ms Double · 狙腕</div>
               </div>
             </div>
 
@@ -571,7 +571,7 @@
               </div>
               <div class="p-1.5 bg-slate-950/95">
                 <div class="text-xs font-athletic font-black italic uppercase text-orange-200 leading-tight">SABRE · 佩剑</div>
-                <div class="text-[9px] text-orange-200/80 truncate">飞跃劈斩 · 5号架顶</div>
+                <div class="text-[9px] text-orange-200/80 truncate">Flunge Cut · Quinte Roof (5) · 劈斩架顶</div>
               </div>
             </div>
           </div>
@@ -594,16 +594,16 @@
             </div>
             <div class="flex items-baseline gap-1.5 mt-0.5">
               <span id="rivalNameText" class="text-base font-athletic font-black italic uppercase text-white tracking-wider leading-none">ELENA ROSSI</span>
-              <span id="rivalTitleText" class="text-[9px] font-bold text-amber-300 truncate">米兰灵蛇快剑手 · La Vipère</span>
+              <span id="rivalTitleText" class="text-[9px] font-bold text-amber-300 truncate">The Viper of Milan · 米兰灵蛇快剑手</span>
             </div>
-            <div id="rivalTauntQuote" class="text-[9px] italic text-cyan-200/90 truncate mt-0.5">"Troppo lento! 别被我的第一剑虚晃骗到哦。"</div>
-            <div id="rivalStyleDesc" class="text-[9px] text-slate-400 truncate">高频假动作变线 (Feinte) + 低蹲潜刺 (Passata Sotto)</div>
+            <div id="rivalTauntQuote" class="text-[9px] italic text-cyan-200/90 truncate mt-0.5">"Troppo lento! Don't bite on my first feint. · 别被第一剑虚晃骗到。"</div>
+            <div id="rivalStyleDesc" class="text-[9px] text-slate-400 truncate">Rapid Feint-Disengages + Distance-Pulling + Passata Sotto Low Thrust · 虚晃与潜刺</div>
           </div>
         </div>
 
         <div class="grid grid-cols-3 gap-2 mb-3">
           <div class="bg-slate-900/85 p-1.5 border-l-2 border-slate-600">
-            <div class="text-[8px] font-mono-tech uppercase font-bold text-slate-400 mb-1">CHALLENGER · 对手</div>
+            <div class="text-[8px] font-mono-tech uppercase font-bold text-slate-400 mb-1">CHALLENGER · 难度</div>
             <div class="flex gap-1">
               <button data-diff="easy" class="diff-btn flex-1 py-1 text-[10px] font-athletic font-bold uppercase bg-slate-800 text-slate-400">NOVICE</button>
               <button data-diff="normal" class="diff-btn flex-1 py-1 text-[10px] font-athletic font-bold uppercase bg-amber-500/20 text-amber-300 border-b-2 border-amber-400">CADET</button>
@@ -631,7 +631,7 @@
         <div class="flex flex-col sm:flex-row gap-2">
           <button id="btnStartBout" class="cta-strike-btn flex-1 py-3 px-5 font-athletic font-black italic text-base sm:text-lg tracking-wider uppercase">
             <span class="unskew flex items-center justify-center gap-2">
-              <span>ENTER THE PISTE · 开始正式交锋</span>
+              <span>ENTER THE PISTE · 开始交锋</span>
               <span>▸</span>
             </span>
           </button>
@@ -642,10 +642,10 @@
 
         <div class="grid grid-cols-2 gap-2 mt-2">
           <button id="btnModalEnterTutorial" class="skew-plate py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-amber-300 font-athletic font-bold text-xs uppercase tracking-wider border-l-2 border-amber-400 border-y border-r border-slate-800 transition">
-            <span class="unskew block">ACADEMY · 7节互动基本功教学</span>
+            <span class="unskew block">ACADEMY · 7 Interactive Drills · 教学</span>
           </button>
           <button id="btnModalOpenFlashcards" class="skew-plate py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-emerald-300 font-athletic font-bold text-xs uppercase tracking-wider border-l-2 border-emerald-400 border-y border-r border-slate-800 transition">
-            <span class="unskew block">LEXIQUE · 中/英/法官方术语词典</span>
+            <span class="unskew block">LEXICON · FR/EN/ZH Glossary · 词典</span>
           </button>
         </div>
       </div>
@@ -659,17 +659,17 @@
           <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
           <span class="text-[10px] font-mono-tech font-black text-rose-400 uppercase tracking-widest">WEBGL PBR 3D // SCULPTED ANATOMICAL RIG LIVE</span>
         </div>
-        <div class="text-[11px] font-mono-tech text-slate-300 mt-0.5">移动鼠标 360° 环视模型 · 切换镜头检视面罩、金属衣与护手建模</div>
+        <div class="text-[11px] font-mono-tech text-slate-300 mt-0.5">Move mouse to orbit 360° · Switch cameras to inspect mask, lamé & bell guard · 环视3D装备建模</div>
         <div class="flex items-center justify-end gap-1.5 mt-2">
-          <button id="btnCamCloseup" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-black uppercase bg-amber-400 text-slate-950 transition">CAM 01 · 建模特写</button>
-          <button id="btnCamDuel" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-bold uppercase bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">CAM 02 · 双人全景</button>
-          <button id="btnCamPov" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-bold uppercase bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">CAM 03 · 第一视角</button>
+          <button id="btnCamCloseup" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-black uppercase bg-amber-400 text-slate-950 transition">CAM 01 · CLOSE-UP 特写</button>
+          <button id="btnCamDuel" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-bold uppercase bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">CAM 02 · FULL PISTE 全景</button>
+          <button id="btnCamPov" type="button" class="px-2.5 py-1 text-[10px] font-mono-tech font-bold uppercase bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">CAM 03 · 1ST-PERSON 主视角</button>
         </div>
       </div>
 
       <div id="watermarkSpecBox" class="bg-slate-950/85 border-r-4 border-amber-400 border-y border-l border-slate-800/80 px-5 py-3.5 text-right backdrop-blur-sm max-w-md">
         <div class="text-[10px] font-mono-tech font-bold text-amber-400 uppercase tracking-widest">FIE HOMOLOGATION TELEMETRY · 国际剑联器械参数</div>
-        <div id="watermarkWeaponTitle" class="text-2xl font-athletic font-black italic uppercase text-white tracking-wider mt-0.5">FLEURET · 花剑 (FOIL)</div>
+        <div id="watermarkWeaponTitle" class="text-2xl font-athletic font-black italic uppercase text-white tracking-wider mt-0.5">FOIL · FLEURET (花剑)</div>
         <div class="grid grid-cols-3 gap-2 my-2 text-left">
           <div class="bg-slate-900/90 p-1.5 border-l-2 border-cyan-400">
             <div class="text-[8px] font-mono-tech text-slate-400">TRIGGER / 触发压力</div>
@@ -677,14 +677,14 @@
           </div>
           <div class="bg-slate-900/90 p-1.5 border-l-2 border-amber-400">
             <div class="text-[8px] font-mono-tech text-slate-400">LOCKOUT / 闭锁时间</div>
-            <div id="watermarkSpec2" class="text-[11px] font-mono-tech font-bold text-amber-300">300ms ±25ms</div>
+            <div id="watermarkSpec2" class="text-[11px] font-mono-tech font-bold text-amber-300">FORTE / FOIBLE 抗剑</div>
           </div>
           <div class="bg-slate-900/90 p-1.5 border-l-2 border-emerald-400">
             <div class="text-[8px] font-mono-tech text-slate-400">RULE / 裁判法则</div>
-            <div id="watermarkSpec3" class="text-[11px] font-mono-tech font-bold text-emerald-300">PRIORITÉ 优先权</div>
+            <div id="watermarkSpec3" class="text-[11px] font-mono-tech font-bold text-emerald-300">RIGHT-OF-WAY · 优先权</div>
           </div>
         </div>
-        <div class="text-[11px] font-mono-tech text-slate-400">WASD 步法跳蹲 · 左键突刺/挥斩 · 右键弹反 · E键奥林匹克绝技</div>
+        <div class="text-[11px] font-mono-tech text-slate-400">WASD Footwork/Jump/Duck · LMB Strike · RMB Parry · [E] Masterstrike · 基础操作</div>
       </div>
     </div>
 
