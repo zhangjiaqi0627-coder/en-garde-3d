@@ -1,0 +1,276 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=JetBrains+Mono:wght@600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #02040a;
+  font-family: 'Chakra Petch', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #f8fafc;
+}
+
+.font-athletic {
+  font-family: 'Barlow Condensed', 'Chakra Petch', "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.font-mono-tech {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+#webglCanvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#gameCanvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  background: transparent;
+  cursor: none;
+}
+
+/* Authentic 1600N Fencing Mask Optical Vignette & Micro-Mesh */
+.mask-mesh {
+  background-image:
+    radial-gradient(circle at center, transparent 62%, rgba(2, 4, 10, 0.64) 86%, rgba(1, 2, 6, 0.94) 100%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.011) 0px, rgba(255, 255, 255, 0.011) 1px, transparent 1px, transparent 6px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.011) 0px, rgba(255, 255, 255, 0.011) 1px, transparent 1px, transparent 6px);
+  pointer-events: none;
+}
+
+/* High-Intensity FIE Scoring Machine Lamps */
+.score-lamp-green {
+  box-shadow: 0 0 32px rgba(16, 185, 129, 1), 0 0 12px rgba(52, 211, 153, 0.95), inset 0 0 10px rgba(255, 255, 255, 0.92);
+}
+
+.score-lamp-red {
+  box-shadow: 0 0 32px rgba(244, 63, 94, 1), 0 0 12px rgba(251, 113, 133, 0.95), inset 0 0 10px rgba(255, 255, 255, 0.92);
+}
+
+.score-lamp-white {
+  box-shadow: 0 0 24px rgba(248, 250, 252, 0.98), inset 0 0 8px rgba(255, 255, 255, 0.95);
+}
+
+/* Broadcast Scorebug & Tactical Panels */
+.glass-panel {
+  background: linear-gradient(180deg, rgba(8, 13, 25, 0.93) 0%, rgba(4, 7, 15, 0.97) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.88);
+}
+
+.broadcast-scorebug {
+  background: linear-gradient(180deg, #0b1222 0%, #050811 100%);
+  border-top: 2px solid #fbbf24;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  border-left: 1px solid rgba(148, 163, 184, 0.22);
+  border-right: 1px solid rgba(148, 163, 184, 0.22);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+}
+
+.broadcast-tab {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.92) 0%, rgba(7, 11, 20, 0.96) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+  transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.broadcast-tab:hover {
+  border-color: #fbbf24;
+  transform: translateY(-1px);
+}
+
+/* Asymmetric Championship Title Screen */
+.sports-title-backdrop {
+  background: linear-gradient(95deg, rgba(2, 5, 12, 0.97) 0%, rgba(5, 10, 22, 0.94) 42%, rgba(5, 10, 22, 0.42) 65%, rgba(2, 5, 12, 0.04) 100%);
+}
+
+.sports-left-dock {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.012) 0px, rgba(255, 255, 255, 0.012) 2px, transparent 2px, transparent 8px),
+    linear-gradient(165deg, rgba(9, 14, 28, 0.97) 0%, rgba(4, 7, 15, 0.99) 100%);
+  border-right: 2px solid rgba(251, 191, 36, 0.48);
+  box-shadow: 26px 0 64px rgba(0, 0, 0, 0.88);
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+  will-change: transform, opacity;
+}
+
+.dock-slide-out {
+  transform: translateX(-106%);
+  opacity: 0;
+}
+
+.watermark-slide {
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease;
+}
+
+.watermark-slide-out {
+  transform: translateX(48px);
+  opacity: 0;
+}
+
+.skew-plate {
+  position: relative;
+  overflow: hidden;
+  transform: skewX(-8deg);
+  transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.skew-plate > .unskew {
+  transform: skewX(8deg);
+}
+
+.cta-strike-btn {
+  position: relative;
+  overflow: hidden;
+  transform: skewX(-8deg);
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 55%, #fef08a 100%);
+  color: #020617;
+  box-shadow: 0 0 28px rgba(251, 191, 36, 0.38);
+  transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cta-strike-btn:hover {
+  transform: skewX(-8deg) translateX(3px);
+  box-shadow: 0 0 38px rgba(251, 191, 36, 0.72);
+  background: linear-gradient(90deg, #fbbf24 0%, #fde047 65%, #ffffff 100%);
+}
+
+/* Diagonal Broadcast Stinger Wipe */
+.stinger-blade {
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.stinger-off-left  { transform: skewX(-16deg) translateX(-125%); }
+.stinger-center    { transform: skewX(-16deg) translateX(0%); }
+.stinger-off-right { transform: skewX(-16deg) translateX(125%); }
+
+/* Metallic Sheen Sweep on Click */
+.skew-plate::after, .diff-btn::after, .target-btn::after, .weapon-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 65%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.30), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+.plate-clicked::after {
+  animation: plateSheenSweep 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes plateSheenSweep {
+  0%   { left: -110%; }
+  100% { left: 165%; }
+}
+
+/* Illustrated Key-Art Weapon Cards */
+.weapon-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.keyart-card-img {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+.weapon-card:hover .keyart-card-img {
+  transform: scale(1.09);
+  filter: brightness(1.14) contrast(1.08);
+}
+
+.weapon-card-active-glow-cyan {
+  box-shadow: 0 0 26px rgba(34, 211, 238, 0.38), inset 0 0 16px rgba(34, 211, 238, 0.18);
+}
+
+.weapon-card-active-glow-amber {
+  box-shadow: 0 0 26px rgba(251, 191, 36, 0.40), inset 0 0 16px rgba(251, 191, 36, 0.18);
+}
+
+.weapon-card-active-glow-orange {
+  box-shadow: 0 0 26px rgba(249, 115, 22, 0.44), inset 0 0 16px rgba(249, 115, 22, 0.20);
+}
+
+/* Style Rank & Telemetry Animations */
+.style-rank-badge {
+  text-shadow: 0 0 24px currentColor;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+
+.style-pop {
+  animation: styleRankPop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes styleRankPop {
+  0%   { transform: scale(1.45) rotate(-6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.telemetry-pulse {
+  animation: telemetrySlideIn 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes telemetrySlideIn {
+  0%   { opacity: 0.2; transform: translateX(22px) skewX(-6deg); }
+  100% { opacity: 1;   transform: translateX(0) skewX(0deg); }
+}
+
+.match-point-pulse {
+  animation: matchPointGlow 1.05s ease-in-out infinite alternate;
+}
+
+@keyframes matchPointGlow {
+  0%   { box-shadow: 0 0 12px rgba(244, 63, 94, 0.45); }
+  100% { box-shadow: 0 0 28px rgba(251, 191, 36, 0.90); }
+}
+
+.fc-flip-anim {
+  animation: fcShutterFlip 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fcShutterFlip {
+  0%   { opacity: 0.25; transform: perspective(900px) rotateX(10deg) translateY(8px) scale(0.98); }
+  100% { opacity: 1;    transform: perspective(900px) rotateX(0deg) translateY(0) scale(1); }
+}
+
+#flashcardModalOverlay {
+  transition: opacity 0.22s ease;
+}
+
+.fc-modal-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.zone-indicator {
+  transition: all 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.row-tug-indicator {
+  transition: left 0.15s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.15s ease;
+}

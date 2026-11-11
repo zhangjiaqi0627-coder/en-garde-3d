@@ -1,0 +1,32 @@
+# Environment variables & API keys (NEVER commit secrets!)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*secret*
+*credentials*
+
+# macOS / Windows / Linux OS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+*~
+
+# IDE & Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Optional local tooling / Python / Node caches
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+coverage/
+*.log
