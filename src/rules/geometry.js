@@ -34,48 +34,48 @@ function getQuadCoords(q, weapon = state.selectedWeapon) {
 function getQuadrantLabel(q, weapon = state.selectedWeapon) {
   if (weapon === WeaponId.SABRE) {
     switch (q) {
-      case Quadrant.NW: return 'Quinte (5) · Overhead Roof / Head Cut · 架顶劈头';
-      case Quadrant.NE: return 'Tierce (3) · High Outside / Arm Cut · 外立劈臂';
-      case Quadrant.SW: return 'Quarte (4) · High Inside / Cheek Cut · 内立斩面';
-      case Quadrant.SE: return 'Seconde (2) · Low Flank Guard / Cut · 下外撩肋';
-      default:          return 'Tierce (3) · High Outside · 外立';
+      case Quadrant.NW: return 'Quinte (5) · 横剑架顶 / 劈头';
+      case Quadrant.NE: return 'Tierce (3) · 右外立剑 / 劈臂';
+      case Quadrant.SW: return 'Quarte (4) · 左内立剑 / 横斩面';
+      case Quadrant.SE: return 'Seconde (2) · 下外斜防 / 撩肋';
+      default:          return 'Tierce (3) · 右外立剑';
     }
   }
   if (weapon === WeaponId.EPEE) {
     switch (q) {
-      case Quadrant.NW: return 'Masque (4) · Mask High-Inside · 面罩上内';
-      case Quadrant.NE: return 'Poignet (6) · Wrist Snipe (+0.36m) · 狙腕';
-      case Quadrant.SW: return 'Corps (7) · Chest / Torso · 胸腹躯干';
-      case Quadrant.SE: return 'Pied (8) · Lead Foot / Knee · 狙击脚面';
-      default:          return 'Poignet (6) · Wrist Guard · 护腕';
+      case Quadrant.NW: return 'Masque (4) · 瞄准面罩上内';
+      case Quadrant.NE: return 'Poignet (6) · 远距狙腕 (3.24m)';
+      case Quadrant.SW: return 'Corps (7) · 瞄准胸腹内线';
+      case Quadrant.SE: return 'Pied (8) · 狙击前脚面膝盖';
+      default:          return 'Poignet (6) · 狙击手腕';
     }
   }
   switch (q) {
-    case Quadrant.NW: return 'Quarte (4) · High Inside · 上内线';
-    case Quadrant.NE: return 'Sixte (6) · High Outside · 上外线';
-    case Quadrant.SW: return 'Septime (7) · Low Inside · 下内线';
-    case Quadrant.SE: return 'Octave (8) · Low Outside · 下外线';
-    default:          return 'Sixte (6) · High Outside · 上外线';
+    case Quadrant.NW: return 'Quarte (4) · 上内线';
+    case Quadrant.NE: return 'Sixte (6) · 上外线';
+    case Quadrant.SW: return 'Septime (7) · 下内线';
+    case Quadrant.SE: return 'Octave (8) · 下外线';
+    default:          return 'Sixte (6) · 上外线';
   }
 }
 
 function getQuadrantShort(q, weapon = state.selectedWeapon) {
   if (weapon === WeaponId.SABRE) {
     switch (q) {
-      case Quadrant.NW: return 'Quinte(5·Head 头)';
-      case Quadrant.NE: return 'Tierce(3·Arm 臂)';
-      case Quadrant.SW: return 'Quarte(4·Cheek 面)';
-      case Quadrant.SE: return 'Seconde(2·Flank 肋)';
+      case Quadrant.NW: return 'Quinte(5·头顶)';
+      case Quadrant.NE: return 'Tierce(3·右臂)';
+      case Quadrant.SW: return 'Quarte(4·左面)';
+      case Quadrant.SE: return 'Seconde(2·下肋)';
       default:          return 'Tierce(3)';
     }
   }
   if (weapon === WeaponId.EPEE) {
     switch (q) {
-      case Quadrant.NW: return 'Masque(Mask 面罩)';
-      case Quadrant.NE: return 'Poignet(Wrist 手腕)';
-      case Quadrant.SW: return 'Corps(Body 躯干)';
-      case Quadrant.SE: return 'Pied(Foot 脚面)';
-      default:          return 'Poignet(Wrist 手腕)';
+      case Quadrant.NW: return 'Masque(面罩)';
+      case Quadrant.NE: return 'Poignet(手腕)';
+      case Quadrant.SW: return 'Corps(躯干)';
+      case Quadrant.SE: return 'Pied(脚面)';
+      default:          return 'Poignet(手腕)';
     }
   }
   switch (q) {
@@ -89,20 +89,20 @@ function getQuadrantShort(q, weapon = state.selectedWeapon) {
 
 function getSabreCutName(q) {
   switch (q) {
-    case Quadrant.NW: return 'Coup à la Tête (Head Cut · 当头直劈!)';
-    case Quadrant.NE: return 'Coup à la Manche (Arm Cut · 外线斩臂!)';
-    case Quadrant.SW: return 'Coup à la Figure (Cheek Cut · 内线横斩!)';
-    case Quadrant.SE: return 'Coup au Flanc (Flank Cut · 下线撩肋!)';
-    default:          return 'Coup de Taille (Sabre Slash · 佩剑挥斩!)';
+    case Quadrant.NW: return 'Coup à la Tête (当头直劈面罩!)';
+    case Quadrant.NE: return 'Coup à la Manche (外线挥斩前臂!)';
+    case Quadrant.SW: return 'Coup à la Figure (内线横斩面胸!)';
+    case Quadrant.SE: return 'Coup au Flanc (下线斜撩侧肋!)';
+    default:          return 'Coup de Taille (佩剑挥斩!)';
   }
 }
 
 function getEpeeTargetName(q) {
   switch (q) {
-    case Quadrant.NE: return 'Saignée au Poignet (Wrist Snipe · 远距狙腕!)';
-    case Quadrant.NW: return 'Touche au Masque (Mask Thrust · 点刺面罩!)';
-    case Quadrant.SE: return 'Touche au Pied (Foot Touch · 下潜点脚!)';
-    default:          return 'Botti au Corps (Deep Torso Hit · 深刺躯干!)';
+    case Quadrant.NE: return 'Saignée au Poignet (重剑远距狙腕!)';
+    case Quadrant.NW: return 'Touche au Masque (重剑点刺面罩!)';
+    case Quadrant.SE: return 'Touche au Pied (重剑下潜点脚!)';
+    default:          return 'Botti au Corps (重剑深刺躯干!)';
   }
 }
 
@@ -110,7 +110,7 @@ function getEpeeTargetName(q) {
 // REAL-MATCH 3D BLADE SEGMENT COLLISION, LEVERAGE & FIE AXIAL IMPACT MECHANICS
 // ============================================================================
 
-// Computes exact 3D World-Space Hilt & Tip coordinates matching ThreeArenaEngine
+// Computes exact 3D World-Space Hilt & Tip coordinates synchronized 1:1 with poseFencer3D in ThreeArenaEngine!
 function computeWorldBladeSegment3D(params) {
   const {
     isP1, baseZ, jumpY, posture, ext,
@@ -119,19 +119,23 @@ function computeWorldBladeSegment3D(params) {
   } = params;
 
   const dirZ = isP1 ? 1 : -1;
-  const crouchDrop = posture === Posture.DUCK ? 0.30 : 0;
-  const lungeSink = ext * 0.23;
-  const shoulderY = Math.max(0.68, 1.30 - crouchDrop - lungeSink) + Math.max(0, jumpY * 0.50);
-  const shoulderZ = baseZ + dirZ * (0.14 + ext * 0.42);
+  const crouchDrop = posture === Posture.DUCK ? -0.22 : 0;
+  const airLift = posture === Posture.JUMP ? Math.max(0.14, jumpY * 0.55) : Math.max(0, jumpY * 0.55);
+  const lungePelvisZ = baseZ + dirZ * (ext * 0.50);
+  const pelvisY = Math.max(0.46, 0.82 - ext * 0.21 + crouchDrop + airLift);
+
+  // Exact world-space lead shoulder socket matching poseFencer3D (pelvisY + 0.39m, lungePelvisZ + dirZ * (0.14 + ext * 0.08))
+  const shoulderY = pelvisY + 0.39 - ext * 0.03;
+  const shoulderZ = lungePelvisZ + dirZ * (0.14 + ext * 0.08);
   const bladeLen = WEAPON_CHANNELS[wType] ? WEAPON_CHANNELS[wType].bladeLength3D : 0.89;
 
   // Screen +X corresponds to World -X in P1 camera space
-  let hx = -0.13 - guardX * 0.22;
-  let hy = shoulderY - 0.14 - guardY * 0.18 + coupeLift * 0.16;
-  let hz = shoulderZ + dirZ * (0.30 + ext * 0.26);
+  let hx = -0.13 * (1 - ext * 0.45) - guardX * (0.22 - ext * 0.08);
+  let hy = shoulderY - 0.14 * (1 - ext * 0.88) - guardY * (0.16 - ext * 0.06) + coupeLift * 0.16;
+  let hz = shoulderZ + dirZ * (0.31 + ext * 0.252);
 
-  let tx = -tipX * 0.36;
-  let ty = hy + 0.05 - tipY * 0.24 + coupeLift * 0.32;
+  let tx = -tipX * 0.34;
+  let ty = hy + 0.05 * (1 - ext) - tipY * 0.22 + coupeLift * 0.32;
   let tz = hz + dirZ * bladeLen;
 
   if (wType === WeaponId.SABRE) {
@@ -252,6 +256,11 @@ function solve3DBladeSegmentCollision(seg1, seg2) {
     s1: s,
     s2: t,
     dist3D,
+    c1x, c1y, c1z,
+    c2x, c2y, c2z,
+    nxWorld: dist3D > 1e-4 ? (nxWorld / dist3D) : -1,
+    nyWorld: dist3D > 1e-4 ? (nyWorld / dist3D) : 0,
+    nzWorld: dist3D > 1e-4 ? (nzWorld / dist3D) : 0,
     contactX: (c1x + c2x) * 0.5,
     contactY: (c1y + c2y) * 0.5,
     contactZ: (c1z + c2z) * 0.5,
@@ -259,6 +268,115 @@ function solve3DBladeSegmentCollision(seg1, seg2) {
     pushScreenX: dist3D > 1e-4 ? (-nxWorld / dist3D) : 1,
     pushScreenY: dist3D > 1e-4 ? (-nyWorld / dist3D) : 0,
     leverageP1
+  };
+}
+
+// ============================================================================
+// ANATOMICAL 3D BODY CAPSULE / ZONE HIT SOLVER (MASK, TORSO LAMÉ, SWORD ARM, LEAD LEG)
+// ============================================================================
+// Evaluates exact 3D anatomical surface contact on the defender, returning:
+//   - zone: 'mask' | 'torso_lame' | 'sword_arm' | 'lead_leg' | 'off_arm'
+//   - surfaceX, surfaceY, surfaceZ: exact 3D point on the outer anatomical surface where the tip pins!
+//   - relX, relY: local offsets from defender's chest center (for 3D replay & recoil torque)
+//   - overreach: how deep (m) the unbent blade tip compressed past the surface (drives realistic parabolic Euler buckling!)
+function evaluate3DAnatomicalBodyContact(params) {
+  const {
+    wType, attackerIsP1,
+    attackerTipX, attackerTipY, attackerQuad,
+    defenderBaseZ, defenderExt, defenderPosture, defenderJumpY,
+    defenderGuardX, defenderGuardY,
+    attackerSeg, bladePoise = 100, isMaster = false
+  } = params;
+
+  const dirZ = attackerIsP1 ? 1 : -1;
+  const defDirZ = -dirZ;
+  const crouchDrop = defenderPosture === Posture.DUCK ? -0.22 : 0;
+  const airLift = defenderPosture === Posture.JUMP ? Math.max(0.14, defenderJumpY * 0.55) : Math.max(0, defenderJumpY * 0.55);
+  const defPelvisZ = defenderBaseZ + defDirZ * (defenderExt * 0.50);
+  const defPelvisY = Math.max(0.46, 0.82 - defenderExt * 0.21 + crouchDrop + airLift);
+
+  // Anatomical zone front-facing Z planes & vertical/lateral bounds on the 3D sculpted fencer
+  const chestCenterY = defPelvisY + 0.28;
+  const chestFrontZ  = defPelvisZ + defDirZ * 0.21;
+  const maskCenterY  = defPelvisY + 0.65;
+  const maskFrontZ   = defPelvisZ + defDirZ * 0.22;
+  const wristWorldX  = -0.11 - defenderGuardX * 0.20;
+  const wristWorldY  = defPelvisY + 0.26 - defenderGuardY * 0.14;
+  const wristFrontZ  = defPelvisZ + defDirZ * (0.44 + defenderExt * 0.24);
+  const footWorldX   = -0.05;
+  const footWorldY   = 0.12 + airLift * 0.85;
+  const footFrontZ   = defPelvisZ + defDirZ * (0.36 + defenderExt * 0.12);
+
+  // Determine targeted 3D anatomical zone from weapon discipline, quadrant & aim
+  let zone = 'torso_lame';
+  let surfaceX = Math.max(-0.17, Math.min(0.17, -attackerTipX * 0.28));
+  let surfaceY = Math.max(defPelvisY + 0.04, Math.min(defPelvisY + 0.48, chestCenterY - attackerTipY * 0.24));
+  let surfaceZ = chestFrontZ;
+
+  if (wType === WeaponId.EPEE) {
+    if (attackerQuad === Quadrant.NE || (attackerTipX > 0.15 && Math.abs(attackerTipY) < 0.38)) {
+      zone = 'sword_arm';
+      surfaceX = wristWorldX + (attackerTipX - 0.35) * 0.06;
+      surfaceY = wristWorldY - (attackerTipY + 0.25) * 0.06;
+      surfaceZ = wristFrontZ;
+    } else if (attackerQuad === Quadrant.SE && attackerTipY > 0.15) {
+      zone = 'lead_leg';
+      surfaceX = footWorldX - (attackerTipX - 0.30) * 0.07;
+      surfaceY = footWorldY + Math.max(0, (0.45 - attackerTipY) * 0.22);
+      surfaceZ = footFrontZ;
+    } else if (attackerQuad === Quadrant.NW && attackerTipY < -0.18) {
+      zone = 'mask';
+      surfaceX = Math.max(-0.085, Math.min(0.085, -attackerTipX * 0.16));
+      surfaceY = maskCenterY - (attackerTipY + 0.32) * 0.12;
+      surfaceZ = maskFrontZ;
+    }
+  } else if (wType === WeaponId.SABRE) {
+    if (attackerQuad === Quadrant.NW) {
+      zone = 'mask';
+      surfaceX = Math.max(-0.08, Math.min(0.08, -attackerTipX * 0.14));
+      surfaceY = maskCenterY + 0.04;
+      surfaceZ = maskFrontZ;
+    } else if (attackerQuad === Quadrant.NE) {
+      zone = 'sword_arm';
+      surfaceX = wristWorldX - 0.04;
+      surfaceY = wristWorldY + 0.05;
+      surfaceZ = wristFrontZ - defDirZ * 0.10;
+    } else {
+      zone = 'torso_lame';
+      surfaceX = attackerQuad === Quadrant.SW ? 0.13 : -0.13;
+      surfaceY = defPelvisY + (attackerQuad === Quadrant.SW ? 0.32 : 0.18);
+      surfaceZ = chestFrontZ;
+    }
+  } else {
+    // FOIL: Valid target is strictly the conductive torso lamé & mask bib; extreme lateral/vertical aim hits off-target white jacket/arm/thigh!
+    const isOff = !isMaster && computeOffTargetStatus(wType, attackerTipX, attackerTipY, 0, 0, bladePoise);
+    if (isOff) {
+      if (attackerTipY > 0.42) {
+        zone = 'lead_leg';
+        surfaceX = Math.max(-0.14, Math.min(0.14, -attackerTipX * 0.22));
+        surfaceY = defPelvisY - 0.12;
+        surfaceZ = defPelvisZ + defDirZ * 0.24;
+      } else {
+        zone = 'off_arm';
+        surfaceX = attackerTipX >= 0 ? -0.22 : 0.22;
+        surfaceY = defPelvisY + 0.34;
+        surfaceZ = chestFrontZ + defDirZ * 0.05;
+      }
+    }
+  }
+
+  const tipZ = attackerSeg ? attackerSeg.tz : (surfaceZ + dirZ * 0.12);
+  const rawOverreach = Math.max(0.02, dirZ * (tipZ - surfaceZ));
+  const overreach = Math.min(0.38, rawOverreach);
+
+  return {
+    zone,
+    surfaceX,
+    surfaceY,
+    surfaceZ,
+    relX: surfaceX,
+    relY: surfaceY - chestCenterY,
+    overreach
   };
 }
 
@@ -642,15 +760,15 @@ function selectWeaponDiscipline(wType, silent = false) {
   });
 
   if (wType === WeaponId.SABRE) {
-    setDomText(DOM.quadNW, '5T');
-    setDomText(DOM.quadNE, '3R');
-    setDomText(DOM.quadSW, '4L');
-    setDomText(DOM.quadSE, '2F');
+    setDomText(DOM.quadNW, '5顶');
+    setDomText(DOM.quadNE, '3右');
+    setDomText(DOM.quadSW, '4左');
+    setDomText(DOM.quadSE, '2肋');
   } else if (wType === WeaponId.EPEE) {
-    setDomText(DOM.quadNW, 'M');
-    setDomText(DOM.quadNE, 'W');
-    setDomText(DOM.quadSW, 'B');
-    setDomText(DOM.quadSE, 'F');
+    setDomText(DOM.quadNW, '面');
+    setDomText(DOM.quadNE, '腕');
+    setDomText(DOM.quadSW, '胸');
+    setDomText(DOM.quadSE, '脚');
   } else {
     setDomText(DOM.quadNW, '4');
     setDomText(DOM.quadNE, '6');
@@ -672,20 +790,20 @@ function selectWeaponDiscipline(wType, silent = false) {
     DOM.watermarkSpecBox.classList.add('telemetry-pulse');
   }
   if (wType === WeaponId.SABRE) {
-    setDomText(DOM.watermarkWeaponTitle, 'SABRE · ARME DE TAILLE (佩剑)');
-    setDomText(DOM.watermarkSpec1, 'CONTRE-TAILLE CLASH · 拼刀');
+    setDomText(DOM.watermarkWeaponTitle, 'SABRE · 佩剑 (ARME DE TAILLE)');
+    setDomText(DOM.watermarkSpec1, 'CONTRE-TAILLE 拼刀');
     setDomText(DOM.watermarkSpec2, '170ms ±10ms');
-    setDomText(DOM.watermarkSpec3, 'PRIORITÉ · WAIST-UP 腰上');
+    setDomText(DOM.watermarkSpec3, 'PRIORITÉ + 腰上有效');
   } else if (wType === WeaponId.EPEE) {
-    setDomText(DOM.watermarkWeaponTitle, 'ÉPÉE · FULL TARGET (重剑)');
+    setDomText(DOM.watermarkWeaponTitle, 'ÉPÉE · 重剑 (FULL TARGET)');
     setDomText(DOM.watermarkSpec1, '> 7.35N (750gf)');
     setDomText(DOM.watermarkSpec2, '45ms LIVE BOX');
-    setDomText(DOM.watermarkSpec3, 'COQUILLE + DOUBLE 双灯');
+    setDomText(DOM.watermarkSpec3, 'COQUILLE + 双灯');
   } else {
-    setDomText(DOM.watermarkWeaponTitle, 'FOIL · FLEURET (花剑)');
+    setDomText(DOM.watermarkWeaponTitle, 'FLEURET · 花剑 (FOIL)');
     setDomText(DOM.watermarkSpec1, '> 4.90N (500gf)');
-    setDomText(DOM.watermarkSpec2, 'FORTE/FOIBLE · 抗剑');
-    setDomText(DOM.watermarkSpec3, 'PRIORITÉ · 优先权');
+    setDomText(DOM.watermarkSpec2, 'FORTE/FOIBLE 抗剑');
+    setDomText(DOM.watermarkSpec3, 'PRIORITÉ 优先权');
   }
 
   state.quadrant = getQuadrant(state.guardX, state.guardY, wType);

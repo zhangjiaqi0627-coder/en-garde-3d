@@ -264,23 +264,40 @@ class SoundEngine {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
+    const oscBuzz = this.ctx.createOscillator();
+    const filt = this.ctx.createBiquadFilter();
     const gain = this.ctx.createGain();
     osc.type = 'square';
+    oscBuzz.type = 'sawtooth';
+    filt.type = 'bandpass';
+    filt.frequency.value = 2150;
+    filt.Q.value = 2.2;
     if (type === 'player') {
       osc.frequency.setValueAtTime(987.77, now);
       osc.frequency.setValueAtTime(1318.51, now + 0.09);
+      oscBuzz.frequency.setValueAtTime(2637.02, now);
     } else if (type === 'ai') {
       osc.frequency.setValueAtTime(587.33, now);
       osc.frequency.setValueAtTime(440.0, now + 0.11);
+      oscBuzz.frequency.setValueAtTime(1760.0, now);
     } else {
       osc.frequency.setValueAtTime(740.0, now);
+      oscBuzz.frequency.setValueAtTime(1480.0, now);
     }
     gain.gain.setValueAtTime(0.10, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.46);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+    const buzzGain = this.ctx.createGain();
+    buzzGain.gain.setValueAtTime(0.032, now);
+    buzzGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.44);
     osc.connect(gain);
+    oscBuzz.connect(filt);
+    filt.connect(buzzGain);
     gain.connect(this.ctx.destination);
+    buzzGain.connect(this.ctx.destination);
     osc.start(now);
-    osc.stop(now + 0.48);
+    oscBuzz.start(now);
+    osc.stop(now + 0.50);
+    oscBuzz.stop(now + 0.46);
   }
 
   playCrowdReaction(cheer = true) {

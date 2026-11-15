@@ -1,4 +1,80 @@
-// Module 6: Real-Match 120Hz 3D Blade-Collision Physics, FIE Spring-Tip & Lockout Box, Inertial Footwork, Remise & Tactical AI
+// Module 6: Real-Match 120Hz 3D Blade-Collision Physics, FIE Spring-Tip & Lockout Box, Inertial Footwork, 3D Instant Replay & Tactical AI
+
+function recordReplayFrameSnapshot() {
+  const snap = {
+    p1Z: state.playerZ,
+    p2Z: state.aiZ,
+    p1Y: state.playerY,
+    p2Y: state.aiY,
+    p1Posture: state.playerPosture,
+    p2Posture: state.aiPosture,
+    p1Ext: state.playerExtension,
+    p2Ext: state.aiExtension,
+    p1GX: state.guardX,
+    p1GY: state.guardY,
+    p2GX: state.aiGuardX,
+    p2GY: state.aiGuardY,
+    p1Act: state.playerAction,
+    p2Act: state.aiAction,
+    p1Quad: state.quadrant,
+    p2Quad: state.aiAttackQuad,
+    p2Coupe: state.aiCoupeLiftY,
+    p1Slash: state.sabreSlashPhase,
+    p2Slash: state.p2SabreSlashPhase,
+    p1Buckle: state.bladeBuckleAmp,
+    p2Buckle: state.p2BladeBuckleAmp,
+    p1VibX: state.bladeVibX,
+    p1VibY: state.bladeVibY,
+    p2VibX: state.p2BladeVibX,
+    p2VibY: state.p2BladeVibY,
+    bind: state.bladeBindActive,
+    lev: state.bindLeverage,
+    s1: state.bindStationP1,
+    s2: state.bindStationP2,
+    bindWX: state.bindContactWorldX,
+    bindWY: state.bindContactWorldY,
+    bindWZ: state.bindContactWorldZ,
+    p1Pin: state.pinnedHitActive,
+    p1PinX: state.pinnedWorldX,
+    p1PinY: state.pinnedWorldY,
+    p1PinZ: state.pinnedWorldZ,
+    p2Pin: state.p2PinnedHitActive,
+    p2PinX: state.p2PinnedWorldX,
+    p2PinY: state.p2PinnedWorldY,
+    p2PinZ: state.p2PinnedWorldZ,
+    p1Rec: state.p1HitRecoil,
+    p1RecX: state.p1HitRecoilX,
+    p1RecY: state.p1HitRecoilY,
+    p2Rec: state.p2HitRecoil,
+    p2RecX: state.p2HitRecoilX,
+    p2RecY: state.p2HitRecoilY
+  };
+  state.replayFrames.push(snap);
+  if (state.replayFrames.length > 96) {
+    state.replayFrames.shift();
+  }
+}
+
+function startInstant3DReplay() {
+  if (state.replayFrames.length < 10 || state.gameMode === GameMode.TUTORIAL) return false;
+  state.replayActive = true;
+  state.replayCursor = Math.max(0, state.replayFrames.length - 54);
+  state.replayCameraAngle = (Math.random() < 0.5 ? 0.22 : -0.22);
+  if (state.roundPhase === RoundPhase.HALT && state.phaseTimer < 1.55) {
+    state.phaseTimer = 1.55;
+  }
+  return true;
+}
+
+function skipInstant3DReplay() {
+  if (!state.replayActive) return false;
+  state.replayActive = false;
+  if (state.roundPhase === RoundPhase.HALT && state.phaseTimer > 0.12) {
+    state.phaseTimer = 0.08;
+  }
+  return true;
+}
+
 
 function injectBladeVibration(isP1, impX, impY) {
   if (isP1) {
@@ -81,9 +157,9 @@ function handleSwipeBladeMovement(nx, ny) {
     if (state.rightOfWay === 'player' && state.riposteBonusTimer <= 0) {
       state.rightOfWay = 'ai';
       state.rowMeter = 80;
-      state.rowReason = 'GARDE OUVERTE · POISE LOST · 失稳';
+      state.rowReason = 'GARDE OUVERTE · 乱晃失稳';
     }
-    if (state.gameMode === GameMode.SINGLE && state.aiAction === Action.IDLE && dist < 2.65 && state.punishCooldown <= 0) {
+    if (state.gameMode === GameMode.SINGLE && state.aiAction === Action.IDLE && dist < 3.12 && state.punishCooldown <= 0) {
       state.punishCooldown = 0.95;
       launchAIScheme('temps_opportunite');
     }
@@ -93,14 +169,14 @@ function handleSwipeBladeMovement(nx, ny) {
   if (state.parryWhiffLockout > 0) return;
 
   // Feint-Bait Punishment (Biting early on yellow deception)
-  if (state.gameMode !== GameMode.SPLIT_2P && (state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2) && dist < 2.85 && deltaDist > 0.05) {
+  if (state.gameMode !== GameMode.SPLIT_2P && (state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2) && dist < 3.32 && deltaDist > 0.05) {
     if (newQuad === state.aiAttackQuad) {
       state.parryWhiffLockout = 0.32;
       state.swipeParryWindow = 0;
       state.bladePoise = Math.max(28, state.bladePoise - 24);
       injectBladeVibration(true, dx * 18, dy * 18);
-      state.rowReason = 'PARADE VIDE · BAITED BY FEINT · 骗挡硬直';
-      showCallout('DÉROBEMENT! BAITED BY FEINT · 被虚晃骗挡', 'Guard locked 0.32s — Press [A] Retreat or [S] Duck! · 快后撤或下蹲', 'text-amber-300', 0.9);
+      state.rowReason = 'PARADE VIDE · 被假动作骗挡硬直';
+      showCallout('DÉROBEMENT! 被黄光虚晃骗挡', '护手盘失位 0.32s — 快按 A 拉开距离或 S 下蹲！', 'text-amber-300', 0.9);
       return;
     }
   }
@@ -116,7 +192,7 @@ function handleSwipeBladeMovement(nx, ny) {
 
     // Sabre Sweep-to-Slash Gesture
     if (state.selectedWeapon === WeaponId.SABRE && state.playerAction === Action.IDLE &&
-        dist <= 2.45 && dist >= 1.30 && state.bladePoise >= 48 &&
+        dist <= 2.98 && dist >= 1.68 && state.bladePoise >= 48 &&
         state.aiAction !== Action.LUNGE && state.aiAction !== Action.PREP && deltaDist > 0.10) {
       performPlayerLunge(dx, dy);
       return;
@@ -130,7 +206,7 @@ function handleSwipeBladeMovement(nx, ny) {
   if (dAngle < -Math.PI) dAngle += Math.PI * 2;
   state.lastWindAngle = angle;
 
-  if (state.bladeBindActive && dist < 2.65 && state.bladePoise >= 50) {
+  if (state.bladeBindActive && dist < 3.15 && state.bladePoise >= 50) {
     state.circularWindAccum = state.circularWindAccum * 0.93 + Math.abs(dAngle);
     if (state.circularWindAccum > 3.4 && state.beatCooldown <= 0) {
       state.circularWindAccum = 0;
@@ -142,13 +218,13 @@ function handleSwipeBladeMovement(nx, ny) {
 
   // Active Swipe Parry Check (with 3D Contact Spark Emission!)
   if ((state.aiAction === Action.PREP || state.aiAction === Action.LUNGE || state.aiAction === Action.REMISE || state.aiAction === Action.COUPE) &&
-      dist < 2.80 && deltaDist > 0.038 && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
+      dist < 3.28 && deltaDist > 0.038 && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
     const targetQc = getQuadCoords(state.aiAttackQuad, state.selectedWeapon);
     const distToThreat = Math.hypot(clampedX - targetQc.x, clampedY - targetQc.y);
     if (newQuad === state.aiAttackQuad || distToThreat < 0.36) {
       const isPerfect = ((state.aiAction === Action.LUNGE || state.aiAction === Action.REMISE) && state.aiExtension >= 0.36);
       const label = state.selectedWeapon === WeaponId.SABRE && newQuad === Quadrant.NW
-        ? 'QUINTE (5 ROOF · 架顶)'
+        ? 'QUINTE (5号架顶)'
         : (isPerfect ? 'PARADE PARFAITE' : 'PARADE');
       executeSuccessfulPlayerParry(label, isPerfect);
       return;
@@ -156,7 +232,7 @@ function handleSwipeBladeMovement(nx, ny) {
   }
 
   // Proactive Battement (Sharp Forte-on-Foible Beat-Blade Seizure!)
-  if (state.aiAction === Action.IDLE && dist < 2.64 && state.beatCooldown <= 0 &&
+  if (state.aiAction === Action.IDLE && dist < 3.12 && state.beatCooldown <= 0 &&
       deltaDist > 0.065 && deltaDist < 0.36 && state.bladePoise >= 60) {
     const distToAiBlade = Math.hypot(clampedX - state.aiGuardX, clampedY - state.aiGuardY);
     if (distToAiBlade < 0.25) {
@@ -170,7 +246,7 @@ function handleSwipeBladeMovement(nx, ny) {
       injectBladeVibration(true, -dx * 16, -dy * 16);
       injectBladeVibration(false, dx * 26, dy * 26);
       state.camShake = 0.15;
-      state.rowReason = 'BATTEMENT · FORTE BEAT · 敲剑夺权!';
+      state.rowReason = 'BATTEMENT · 强剑身敲击夺权!';
       sound.playClang(1180, 0.92, false);
       const midZ = (state.playerZ + state.aiZ) * 0.5;
       const pt = trigger3DWorldClashSparks(-clampedX * 0.24, 1.18 - clampedY * 0.18, midZ, '#fde047', 0xfde047, 26, 2.5);
@@ -191,7 +267,7 @@ function triggerPlayerJump() {
 
   if (state.gameMode === GameMode.TUTORIAL && TUTORIAL_LESSONS[state.tutorialStep].step === 2 && !state.tutorialFootworkFlags.vertical) {
     state.tutorialFootworkFlags.vertical = true;
-    advanceTutorialProgress(1, 'Jump Evasion (Bond) complete! · 已完成跳跃机动');
+    advanceTutorialProgress(1, '已完成跳跃机动 (Bond)！');
   }
 }
 
@@ -204,7 +280,7 @@ function setPlayerDuck(active) {
 
     if (state.gameMode === GameMode.TUTORIAL && TUTORIAL_LESSONS[state.tutorialStep].step === 2 && !state.tutorialFootworkFlags.vertical) {
       state.tutorialFootworkFlags.vertical = true;
-      advanceTutorialProgress(1, 'Duck Evasion (Esquive) complete! · 已完成下蹲闪避');
+      advanceTutorialProgress(1, '已完成下蹲闪避 (Esquive)！');
     }
   }
 }
@@ -223,10 +299,10 @@ function triggerFootworkBurst(dir) {
   if (state.gameMode === GameMode.TUTORIAL && TUTORIAL_LESSONS[state.tutorialStep].step === 2) {
     if (dir > 0 && !state.tutorialFootworkFlags.advance) {
       state.tutorialFootworkFlags.advance = true;
-      advanceTutorialProgress(1, 'Advance (Marche) complete! · 已完成前进步');
+      advanceTutorialProgress(1, '已完成前进步 (Marche)！');
     } else if (dir < 0 && !state.tutorialFootworkFlags.retreat) {
       state.tutorialFootworkFlags.retreat = true;
-      advanceTutorialProgress(1, 'Retreat (Rompre) complete! · 已完成撤退步');
+      advanceTutorialProgress(1, '已完成撤退步 (Rompre)！');
     }
   }
 
@@ -235,10 +311,10 @@ function triggerFootworkBurst(dir) {
     if (state.aiAction === Action.IDLE && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
       state.rightOfWay = 'player';
       state.rowMeter = -65;
-      state.rowReason = state.selectedWeapon === WeaponId.EPEE ? 'MARCHE · CLOSING MEASURE · 压迫控距' : 'PRIORITÉ P1 · MARCHING · 前压主动';
+      state.rowReason = state.selectedWeapon === WeaponId.EPEE ? 'MARCHE · 重剑压迫控距' : 'PRIORITÉ P1 · 前压步法主动';
       const dist = state.aiZ - state.playerZ;
       const diffCfg = DIFFICULTIES[state.difficulty];
-      if (state.gameMode === GameMode.SINGLE && dist < 2.45 && Math.random() < 0.30 * diffCfg.speedMult) {
+      if (state.gameMode === GameMode.SINGLE && dist < 2.92 && Math.random() < 0.30 * diffCfg.speedMult) {
         launchAIScheme('stop_hit_retreat');
       }
     }
@@ -248,7 +324,7 @@ function triggerFootworkBurst(dir) {
     if (state.rightOfWay === 'player' && state.riposteBonusTimer <= 0) {
       state.rightOfWay = 'none';
       state.rowMeter = 15;
-      state.rowReason = 'ROMPRE · PULLING DISTANCE · 后撤拉距';
+      state.rowReason = 'ROMPRE · 后撤拉开距离';
     }
   }
 }
@@ -318,7 +394,7 @@ function performPlayer2Lunge() {
   if (!canRemise && (state.p2RiposteBonusTimer > 0 || state.playerAction === Action.IDLE)) {
     state.rightOfWay = 'ai';
     state.rowMeter = 92;
-    state.rowReason = 'ATTAQUE P2 · RIGHT PRIORITY · 右方主动';
+    state.rowReason = 'ATTAQUE P2 · 右方进攻主动';
   }
 }
 
@@ -340,24 +416,34 @@ function executeSuccessfulP2Parry() {
   state.p2RiposteBonusTimer = 0.92;
   state.rightOfWay = 'ai';
   state.rowMeter = 100;
-  state.rowReason = 'PARADE P2 · RIGHT PARRY · 右方夺权';
+  state.rowReason = 'PARADE P2 · 右方格挡夺权';
   state.hitStopTimer = 0.052;
   state.p2CamShake = 0.22;
   state.camShake = 0.16;
-  injectBladeVibration(true, 18, -14);
-  injectBladeVibration(false, -12, 10);
+  const deflectSign = state.aiGuardX >= 0 ? -1 : 1;
+  state.tipVelX += deflectSign * 9.5;
+  state.tipVelY -= 4.2;
+  injectBladeVibration(true, deflectSign * 24, -15);
+  injectBladeVibration(false, -deflectSign * 14, 10);
   sound.playClang(1060, 1.2, false);
   refVoice.speakCue('parade');
-  const vp2 = getViewportMetrics(true);
-  spawnSparks(vp2.centerX + state.aiGuardX * 135, vp2.vh * 0.46 + state.aiGuardY * 105, '#fb7185', 34);
-  showCallout('PARADE P2! RIGHT PARRY · 右方格挡', 'P2 press Enter/J to Riposte; P1 retreat or Remise! · 右方还击/左方补刺', 'text-rose-300', 0.95);
+
+  const clashX = -state.aiGuardX * 0.22;
+  const clashY = 1.18 - state.aiGuardY * 0.16;
+  const clashZ = state.aiZ - 0.56;
+  state.parryClashTimer = 0.24;
+  state.parryClashWorldX = clashX;
+  state.parryClashWorldY = clashY;
+  state.parryClashWorldZ = clashZ;
+  trigger3DWorldClashSparks(clashX, clashY, clashZ, '#fb7185', 0xfb7185, 36, 2.8);
+  showCallout('PARADE P2! 右方格挡成功', 'P2 立即按 Enter / J 还击，P1 可后撤或变线补刺！', 'text-rose-300', 0.95);
 }
 
 // COUP DE MAÎTRE (100% Gauge Weapon-Authentic Olympic Signature Masterstrike)
 function performPlayerMasterStrike() {
   if (state.paused || state.roundPhase !== RoundPhase.FIGHTING) return;
   if (state.masterGauge < 100) {
-    showCallout('COUP DE MAÎTRE CHARGING', `Build gauge via blade binds, parries, or touches (${Math.round(state.masterGauge)}%) · 积攒绝技槽`, 'text-amber-300', 0.85);
+    showCallout('COUP DE MAÎTRE CHARGING', `抗剑压制、格挡或命中积攒绝技槽 (${Math.round(state.masterGauge)}%)`, 'text-amber-300', 0.85);
     return;
   }
   if (state.playerAction === Action.LUNGE) return;
@@ -441,7 +527,7 @@ function performPlayerLunge(swipeDx = 0, swipeDy = 0) {
 
   const staminaCost = isRemise ? 15 : 24;
   if (state.stamina < (isRemise ? 15 : 20)) {
-    showCallout('LOW STAMINA · 体能不足', 'Press [A] Retreat to catch your breath & recover stamina · 按 A 后撤恢复体能', 'text-amber-400', 0.8);
+    showCallout('LOW STAMINA', '按 A 后撤步调整呼吸恢复体能', 'text-amber-400', 0.8);
     return;
   }
 
@@ -482,29 +568,29 @@ function performPlayerLunge(swipeDx = 0, swipeDy = 0) {
   if (state.playerAttackHistory.length > 4) state.playerAttackHistory.shift();
 
   if (isRemise) {
-    state.rowReason = `REMISE · SECOND THRUST ${getQuadrantShort(state.quadrant)} · 补刺`;
+    state.rowReason = `REMISE · 变线二次续刺 ${getQuadrantShort(state.quadrant)}`;
   } else if (state.selectedWeapon === WeaponId.EPEE) {
     state.rowReason = state.bladeBindActive && state.bindLeverage >= 1.18
-      ? `OPPOSITION · BIND THRUST ${getQuadrantShort(state.quadrant)} · 压剑刺`
-      : `ÉPÉE · SNIPE ${getQuadrantShort(state.quadrant)} · 狙刺`;
+      ? `OPPOSITION · 压剑封线刺 ${getQuadrantShort(state.quadrant)}`
+      : `ÉPÉE · 狙刺 ${getQuadrantShort(state.quadrant)}`;
   } else if (state.bladePoise < CONSTANTS.POISE_LOSS_THRESHOLD && state.riposteBonusTimer <= 0) {
     state.rightOfWay = 'ai';
     state.rowMeter = 85;
-    state.rowReason = 'GARDE OUVERTE · PRIORITY LOST · 失稳失权';
+    state.rowReason = 'GARDE OUVERTE · 失稳失权';
   } else if (state.riposteBonusTimer > 0) {
     state.rightOfWay = 'player';
     state.rowMeter = -100;
-    state.rowReason = 'RIPOSTE P1 · FULL PRIORITY · 防反优先';
+    state.rowReason = 'RIPOSTE P1 · 防反绝对优先';
   } else if (state.bladeBindActive && state.bindLeverage >= 1.20) {
     state.rightOfWay = 'player';
     state.rowMeter = -95;
-    state.rowReason = `COULÉ FORTE (${state.bindLeverage.toFixed(1)}x) · GLIDE · 滑压进攻`;
+    state.rowReason = `COULÉ FORTE (${state.bindLeverage.toFixed(1)}x) · 强剑身滑压进攻`;
   } else if (state.aiAction === Action.IDLE || state.aiAction === Action.RECOVERY) {
     state.rightOfWay = 'player';
     state.rowMeter = -90;
     state.rowReason = state.selectedWeapon === WeaponId.SABRE
       ? `SABRE · ${getSabreCutName(state.quadrant)}`
-      : 'ATTAQUE P1 · LEFT PRIORITY · 左方主动';
+      : 'ATTAQUE P1 · 左方进攻优先';
   }
 
   if (!isRemise) sound.playFootstep(true);
@@ -516,13 +602,13 @@ function performPlayerParry() {
   if (state.bladePoise < 30 || state.parryWhiffLockout > 0) return;
 
   const dist = state.aiZ - state.playerZ;
-  if (state.gameMode !== GameMode.SPLIT_2P && (state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2) && dist < 2.85) {
+  if (state.gameMode !== GameMode.SPLIT_2P && (state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2) && dist < 3.32) {
     state.parryWhiffLockout = 0.32;
     state.swipeParryWindow = 0;
     state.parryActiveWindow = 0;
     state.bladePoise = Math.max(28, state.bladePoise - 24);
-    state.rowReason = 'PARADE VIDE · BAITED BY FEINT · 骗挡硬直';
-    showCallout('DÉROBEMENT! BAITED BY FEINT · 被虚晃骗挡', 'Guard locked 0.32s — Press [A] to pull measure! · 快按 A 后撤', 'text-amber-300', 0.9);
+    state.rowReason = 'PARADE VIDE · 被假动作骗挡硬直';
+    showCallout('DÉROBEMENT! 被黄光虚晃骗挡', '护手盘失位 0.32s — 快按 A 拉开距离！', 'text-amber-300', 0.9);
     return;
   }
 
@@ -543,7 +629,7 @@ function executeSuccessfulPlayerParry(parryStyle = 'PARADE', isPerfect = false) 
   state.riposteBonusTimer = isPerfect ? 1.15 : 0.92;
   state.rightOfWay = 'player';
   state.rowMeter = -100;
-  state.rowReason = `${parryStyle} · RIPOSTE READY · 立即还击`;
+  state.rowReason = `${parryStyle} · 格挡成功立即还击`;
   state.hitStopTimer = isPerfect ? 0.068 : 0.048;
   state.camShake = isPerfect ? 0.26 : 0.18;
   state.p2CamShake = 0.15;
@@ -558,15 +644,23 @@ function executeSuccessfulPlayerParry(parryStyle = 'PARADE', isPerfect = false) 
   sound.playClang(isPerfect ? 1240 : 1080, isPerfect ? 1.4 : 1.15, isPerfect);
   refVoice.speakCue('parade');
 
-  const contactZ = state.playerZ + 0.85;
+  const clashX = state.bladeBindActive ? state.bindContactWorldX : (-state.guardX * 0.22);
+  const clashY = state.bladeBindActive ? state.bindContactWorldY : (1.18 - state.guardY * 0.16);
+  const clashZ = state.bladeBindActive ? state.bindContactWorldZ : (state.playerZ + 0.78);
+  state.parryClashTimer = 0.26;
+  state.parryClashWorldX = clashX;
+  state.parryClashWorldY = clashY;
+  state.parryClashWorldZ = clashZ;
+  state.p2TipVelX += -deflectSign * 11.5;
+  state.p2TipVelY -= 4.5;
   const pt = trigger3DWorldClashSparks(
-    -state.guardX * 0.24,
-    1.18 - state.guardY * 0.18,
-    contactZ,
+    clashX,
+    clashY,
+    clashZ,
     isPerfect ? '#fde047' : '#38bdf8',
     isPerfect ? 0xfde047 : 0x38bdf8,
-    isPerfect ? 48 : 34,
-    isPerfect ? 3.2 : 2.4
+    isPerfect ? 48 : 36,
+    isPerfect ? 3.4 : 2.6
   );
 
   addStyleMomentum(
@@ -578,8 +672,8 @@ function executeSuccessfulPlayerParry(parryStyle = 'PARADE', isPerfect = false) 
     isPerfect ? '#fde047' : '#38bdf8'
   );
   showCallout(
-    isPerfect ? `⚡ ${parryStyle}! PERFECT PARRY · 完美弹反` : `${parryStyle}! PARRY · 格挡成功`,
-    state.selectedWeapon === WeaponId.SABRE ? 'Blade deflected! Sweep or LMB now to Riposte! · 立即挥砍还击' : 'Blade deflected! Left-Click now to Riposte! · 立即左键还击',
+    isPerfect ? `⚡ ${parryStyle}! 完美弹反` : `${parryStyle}! 格挡成功`,
+    state.selectedWeapon === WeaponId.SABRE ? '对手刀刃弹开！立即挥鼠或左键劈砍还击！' : '对手剑身震荡失位！立即左键发动 RIPOSTE 还击！',
     isPerfect ? 'text-amber-300' : 'text-cyan-300',
     0.95
   );
@@ -685,11 +779,24 @@ function updateReal3DBladeContactPhysics(dt, dist) {
 
   const col = solve3DBladeSegmentCollision(segP1, segP2);
 
-  // Sabre 3D Mid-Air Edge-to-Edge Clash (Contre-Taille / Fer sur Fer!)
+  // Sabre 3D Mid-Air Edge-to-Edge Clash (Contre-Taille / Fer sur Fer) & Steel-on-Steel Bind!
   if (wType === WeaponId.SABRE) {
     const p1Cutting = (state.playerAction === Action.LUNGE || state.playerAction === Action.REMISE || state.sabreSlashPhase > 0.25);
     const p2Cutting = (state.aiAction === Action.LUNGE || state.aiAction === Action.REMISE || state.p2SabreSlashPhase > 0.25);
-    if (p1Cutting && p2Cutting && col.dist3D < 0.115 && state.coquilleDeflectCooldown <= 0) {
+    if (col.dist3D < 0.125) {
+      state.bladeBindActive = true;
+      state.bindStationP1 = col.s1;
+      state.bindStationP2 = col.s2;
+      state.bindLeverage = col.leverageP1;
+      state.bindContactWorldX = col.contactX;
+      state.bindContactWorldY = col.contactY;
+      state.bindContactWorldZ = col.contactZ;
+      state.bindPushVectorX = col.pushScreenX;
+      state.bindPushVectorY = col.pushScreenY;
+    } else {
+      state.bladeBindActive = false;
+    }
+    if (p1Cutting && p2Cutting && col.dist3D < 0.135 && state.coquilleDeflectCooldown <= 0) {
       state.coquilleDeflectCooldown = 0.28;
       state.playerAction = Action.RECOVERY;
       state.playerActionTimer = 0.22;
@@ -704,9 +811,12 @@ function updateReal3DBladeContactPhysics(dt, dist) {
       sound.playClang(1320, 1.25, true);
       const pt = trigger3DWorldClashSparks(col.contactX, col.contactY, col.contactZ, '#fb923c', 0xfb923c, 36, 3.0);
       addStyleMomentum(120, '⚔️ FER SUR FER!', 'SABRE MID-AIR BLADE CLASH', pt.x, pt.y - 30, '#fde047');
-      showCallout('CONTRE-TAILLE! MID-AIR CLASH · 空中拼刀弹开', 'Edges clashed — Left-Click immediately for a Remise cut or retreat! · 立即二次挥斩或后撤', 'text-amber-300', 1.0);
+      state.parryClashTimer = 0.26;
+      state.parryClashWorldX = col.contactX;
+      state.parryClashWorldY = col.contactY;
+      state.parryClashWorldZ = col.contactZ;
+      showCallout('CONTRE-TAILLE! 佩剑空中拼刀弹开', '双刃交击震荡 — 立即点击左键抢先二次挥斩 (Remise) 或后撤！', 'text-amber-300', 1.0);
     }
-    state.bladeBindActive = false;
     state.guardX += (state.mouseX - state.guardX) * Math.min(1, dt * 22);
     state.guardY += (state.mouseY - state.guardY) * Math.min(1, dt * 22);
     return;
@@ -751,7 +861,7 @@ function updateReal3DBladeContactPhysics(dt, dist) {
     if (state.bindPressure >= 0.94 && col.leverageP1 >= 1.15 && state.beatCooldown <= 0) {
       state.beatCooldown = 0.95;
       state.bindPressure = 0.25;
-      executeSuccessfulPlayerParry('PRISE DE FER (FORTE BIND · 强剑压制)', true);
+      executeSuccessfulPlayerParry('PRISE DE FER (强剑压制)', true);
     }
   } else {
     state.bladeBindActive = false;
@@ -881,7 +991,7 @@ function resolveLockoutPhrase() {
     if (firstOff) {
       triggerPoint('offtarget', state.lockoutFirstReason, 'offtarget', first === 'player' ? 'p1' : 'p2');
     } else {
-      const lockTag = wType === WeaponId.EPEE ? ` [45ms Single Light · ${state.lastImpactForceN.toFixed(1)}N · 单灯]` : '';
+      const lockTag = wType === WeaponId.EPEE ? ` [45ms闭锁单灯 · ${state.lastImpactForceN.toFixed(1)}N]` : '';
       triggerPoint(first, `${state.lockoutFirstReason}${lockTag}`, state.lockoutFirstCue);
     }
     return;
@@ -889,7 +999,7 @@ function resolveLockoutPhrase() {
 
   // Case 2: BOTH fencers registered within the FIE electrical lockout window!
   if (wType === WeaponId.EPEE) {
-    triggerPoint('epee_double', `Coup Double (Δt=${dtMs}ms ≤ 45ms Lockout · 双灯互中!)`, 'coup_double');
+    triggerPoint('epee_double', `Coup Double (双灯时间差 Δt=${dtMs}ms ≤ 45ms 闭锁窗!)`, 'coup_double');
     return;
   }
 
@@ -901,25 +1011,25 @@ function resolveLockoutPhrase() {
 
   if (state.rightOfWay === 'player' && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
     if (p1Off) {
-      triggerPoint('offtarget', 'Hors Cible (Priority held, off-target White Light · 优先权但白灯停表)', 'offtarget', 'p1');
+      triggerPoint('offtarget', 'Hors Cible (我方具优先权但刺偏白灯停表)', 'offtarget', 'p1');
     } else if (p1HitValid) {
       const rsn = first === 'player' ? state.lockoutFirstReason : state.lockoutSecondReason;
-      triggerPoint('player', `${rsn} (Double Δt=${dtMs}ms · Your Priority · 优先权得分!)`, 'touch_player');
+      triggerPoint('player', `${rsn} (双灯 Δt=${dtMs}ms · 我方优先权得分!)`, 'touch_player');
     }
     return;
   }
 
   if (state.rightOfWay === 'ai' || state.bladePoise < CONSTANTS.POISE_LOSS_THRESHOLD) {
     if (p2Off) {
-      triggerPoint('offtarget', 'Hors Cible Adverse (Rival Priority, White Light · 对手白灯停表)', 'offtarget', 'p2');
+      triggerPoint('offtarget', 'Hors Cible Adverse (对手具优先权但亮白灯停表)', 'offtarget', 'p2');
     } else if (p2HitValid) {
       const rsn = first === 'ai' ? state.lockoutFirstReason : state.lockoutSecondReason;
-      triggerPoint('ai', `${rsn} (Double Δt=${dtMs}ms · Rival Priority · 对手优先权!)`, 'touch_ai');
+      triggerPoint('ai', `${rsn} (双灯 Δt=${dtMs}ms · 对手优先权!)`, 'touch_ai');
     }
     return;
   }
 
-  triggerPoint('double', `Actions Simultanées (Δt=${dtMs}ms Simultaneous · 同时互中不计分)`, 'simultaneous');
+  triggerPoint('double', `Actions Simultanées (Δt=${dtMs}ms 同时互中不计分)`, 'simultaneous');
 }
 
 function evaluateP2LungeHit(dist) {
@@ -932,8 +1042,8 @@ function evaluateP2LungeHit(dist) {
     state.aiActionTimer = 0.40;
     state.rightOfWay = 'player';
     state.rowMeter = -90;
-    state.rowReason = 'COUP PASSÉ P2 · PASSED TARGET · 过近落空';
-    showCallout(`COUP PASSÉ P2! (${dist.toFixed(2)}m)`, 'Opponent lunged past your shoulder — Counter now! · 过近擦肩落空，立即反击', 'text-amber-300', 1.0);
+    state.rowReason = 'COUP PASSÉ P2 · 右方过近擦肩落空';
+    showCallout(`COUP PASSÉ P2! (${dist.toFixed(2)}m)`, '对手距离过近刺过肩膀 — 立即反击！', 'text-amber-300', 1.0);
     return;
   }
 
@@ -946,12 +1056,12 @@ function evaluateP2LungeHit(dist) {
     state.riposteBonusTimer = 0.65;
     state.rightOfWay = 'player';
     state.rowMeter = -88;
-    state.rowReason = 'COQUILLE · BELL GUARD DEFLECT · 护手盘弹开!';
+    state.rowReason = 'COQUILLE · 你的护手盘弹开来剑!';
     injectBladeVibration(true, -coq.deflectX * 14, -coq.deflectY * 14);
     injectBladeVibration(false, coq.deflectX * 24, coq.deflectY * 24);
     sound.playCoquilleDeflect(wType === WeaponId.EPEE);
     trigger3DWorldClashSparks(-state.guardX * 0.22, 1.16 - state.guardY * 0.16, state.playerZ + 0.52, '#38bdf8', 0x38bdf8, 22, 2.2);
-    showCallout('RICOCHET SUR TA COQUILLE!', 'Tip glanced off your grounded bell guard (no halt) — Counter now! · 撞中你的护手盘弹开', 'text-cyan-300', 0.95);
+    showCallout('RICOCHET SUR TA COQUILLE!', '对手剑尖撞上你的接地护手盘滑开（不亮灯）— 立即反刺！', 'text-cyan-300', 0.95);
     return;
   }
 
@@ -964,9 +1074,9 @@ function evaluateP2LungeHit(dist) {
     state.riposteBonusTimer = 0.68;
     state.rightOfWay = 'player';
     state.rowMeter = -85;
-    state.rowReason = `ROMPRE RÉUSSI · PULLED (${forceN.toFixed(1)}N < ${wCfg.triggerForceN}N) · 卸力`;
+    state.rowReason = `ROMPRE RÉUSSI · 后撤卸力 (${forceN.toFixed(1)}N < ${wCfg.triggerForceN}N)`;
     sound.playBladeScrape(1260, 0.55);
-    showCallout(`EFFLEURÉ! PULLED DISTANCE (${forceN.toFixed(1)}N)`, `Below ${wCfg.triggerForceN}N spring threshold — Counter-attack now! · 拉距卸力成功`, 'text-emerald-300', 1.0);
+    showCallout(`EFFLEURÉ! 成功拉距卸力 (${forceN.toFixed(1)}N)`, `对手剑头压力不足 ${wCfg.triggerForceN}N 未压响弹簧 — 立即反击！`, 'text-emerald-300', 1.0);
     return;
   }
 
@@ -975,30 +1085,67 @@ function evaluateP2LungeHit(dist) {
   const cx = vp2.centerX + state.p2TipX * 95;
   const cy = vp2.vh * 0.44 + state.p2TipY * 80;
 
+  const segP2Now = computeWorldBladeSegment3D({
+    isP1: false, baseZ: state.aiZ, jumpY: state.aiY, posture: state.aiPosture, ext: state.aiExtension,
+    guardX: state.aiGuardX, guardY: state.aiGuardY, tipX: state.p2TipX, tipY: state.p2TipY,
+    wType, slashPhase: state.p2SabreSlashPhase, attackQuad: state.aiAttackQuad, coupeLift: state.aiCoupeLiftY
+  });
+  const bodyHitP2 = evaluate3DAnatomicalBodyContact({
+    wType, attackerIsP1: false,
+    attackerTipX: state.p2TipX, attackerTipY: state.p2TipY, attackerQuad: state.aiAttackQuad,
+    defenderBaseZ: state.playerZ, defenderExt: state.playerExtension,
+    defenderPosture: state.playerPosture, defenderJumpY: state.playerY,
+    defenderGuardX: state.guardX, defenderGuardY: state.guardY,
+    attackerSeg: segP2Now, bladePoise: state.p2BladePoise, isMaster: false
+  });
+
   if (p2IsOffTarget) {
     if (wType === WeaponId.FOIL) {
-      spawnSparks(cx, cy, '#f8fafc', 22);
-      registerApparatusTouch('ai', 'Hors Cible P2 (Off-Target White Light · 右方白灯无效)', 'offtarget', true);
+      state.p2PinnedHitActive = true;
+      state.p2PinnedHitTimer = 0.68;
+      state.p2PinnedWorldX = bodyHitP2.surfaceX;
+      state.p2PinnedWorldY = bodyHitP2.surfaceY;
+      state.p2PinnedWorldZ = bodyHitP2.surfaceZ;
+      state.p2PinnedZone = bodyHitP2.zone;
+      state.p2PinnedIsOffTarget = true;
+      state.p2BladeBuckleAmp = Math.min(0.034, 0.022 + bodyHitP2.overreach * 0.04);
+      state.p1HitRecoil = 0.72;
+      state.p1HitRecoilX = bodyHitP2.relX;
+      state.p1HitRecoilY = bodyHitP2.relY;
+      state.p1HitZone = bodyHitP2.zone;
+      trigger3DWorldClashSparks(bodyHitP2.surfaceX, bodyHitP2.surfaceY, bodyHitP2.surfaceZ, '#f8fafc', 0xf8fafc, 24, 2.0);
+      registerApparatusTouch('ai', 'Hors Cible P2 (右方刺中金属背心外亮白灯)', 'offtarget', true);
     } else if (wType === WeaponId.SABRE) {
       state.aiAction = Action.RECOVERY;
       state.aiActionTimer = 0.30;
-      showCallout('COUP BAS P2 (BELOW WAIST · 腰下无效)', 'Sabre valid waist-up only — Bout continues! · 交锋继续', 'text-amber-300', 0.9);
+      showCallout('COUP BAS P2 (右方腰下无效)', '佩剑仅腰部以上有效，交锋继续', 'text-amber-300', 0.9);
     } else {
       state.aiAction = Action.RECOVERY;
       state.aiActionTimer = 0.30;
-      showCallout('COUP À CÔTÉ P2 (GRAZED · 右方刺偏)', 'Épée tip grazed sleeve without spring trigger — Bout continues! · 交锋继续', 'text-amber-300', 0.9);
+      showCallout('COUP À CÔTÉ P2 (右方刺偏)', '对手重剑擦过衣袖未压响弹簧，交锋继续！', 'text-amber-300', 0.9);
     }
     return;
   }
 
   state.p2PinnedHitActive = (wType !== WeaponId.SABRE);
-  state.p2PinnedHitTimer = 0.65;
-  state.p2BladeBuckleAmp = Math.min(0.18, 0.06 + Math.max(0, wCfg.optimalMax - dist) * 0.14);
+  state.p2PinnedHitTimer = 0.78;
+  state.p2PinnedWorldX = bodyHitP2.surfaceX;
+  state.p2PinnedWorldY = bodyHitP2.surfaceY;
+  state.p2PinnedWorldZ = bodyHitP2.surfaceZ;
+  state.p2PinnedZone = bodyHitP2.zone;
+  state.p2PinnedIsOffTarget = false;
+  state.p2BladeBuckleAmp = Math.min(0.040, 0.026 + bodyHitP2.overreach * 0.05);
 
-  spawnSparks(cx, cy, '#fb7185', 36);
+  // Trigger physical torso/mask/arm impact recoil on P1!
+  state.p1HitRecoil = 1.0;
+  state.p1HitRecoilX = bodyHitP2.relX;
+  state.p1HitRecoilY = bodyHitP2.relY;
+  state.p1HitZone = bodyHitP2.zone;
+
+  trigger3DWorldClashSparks(bodyHitP2.surfaceX, bodyHitP2.surfaceY, bodyHitP2.surfaceZ, '#fb7185', 0xfb7185, 38, 2.8);
   const p2HitTitle = wType === WeaponId.SABRE
     ? `P2 ${getSabreCutName(state.aiAttackQuad)}`
-    : (wType === WeaponId.EPEE ? `P2 ${getEpeeTargetName(state.aiAttackQuad)}` : `P2 Hit · 命中 ${getQuadrantShort(state.aiAttackQuad)}`);
+    : (wType === WeaponId.EPEE ? `P2 ${getEpeeTargetName(state.aiAttackQuad)}` : `P2 命中 ${getQuadrantShort(state.aiAttackQuad)}`);
   registerApparatusTouch('ai', p2HitTitle, 'touch_ai', false);
 }
 
@@ -1025,7 +1172,7 @@ function updatePlayer2Human(dt) {
     if (state.p2MarchHoldDuration > CONSTANTS.MARCH_HESITATION_LIMIT && state.rightOfWay === 'ai') {
       state.rightOfWay = 'none';
       state.rowMeter = -25;
-      state.rowReason = 'ATTAQUE RETARDÉE P2 · HESITATION · 右方失权';
+      state.rowReason = 'ATTAQUE RETARDÉE P2 · 右方久走失权';
     }
   } else {
     state.p2MarchHoldDuration = Math.max(0, state.p2MarchHoldDuration - dt * 2.5);
@@ -1039,7 +1186,8 @@ function updatePlayer2Human(dt) {
   let targetP2Vel = 0;
   if (state.aiAction === Action.LUNGE) {
     const lungeProg = 1 - (state.aiActionTimer / 0.27);
-    targetP2Vel = lungeProg < 0.58 ? -4.85 : -0.95;
+    const stopDist2 = state.selectedWeapon === WeaponId.EPEE ? 2.44 : 2.32;
+    targetP2Vel = dist <= stopDist2 ? 0 : (lungeProg < 0.58 ? -5.05 : -0.85);
   } else if (state.aiAction === Action.REMISE) {
     targetP2Vel = -1.25;
   } else if (state.aiAction === Action.RECOVERY || state.aiAction === Action.PARRIED) {
@@ -1106,7 +1254,7 @@ function updatePlayer2Human(dt) {
 
     const qc = getQuadCoords(state.aiAttackQuad, state.selectedWeapon);
     const guardDist = Math.hypot(state.guardX - qc.x, state.guardY - qc.y);
-    if (dist < 2.62 && state.aiExtension > 0.25 && state.playerAction !== Action.RECOVERY && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
+    if (dist < 3.15 && state.aiExtension > 0.25 && state.playerAction !== Action.RECOVERY && state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD) {
       if ((state.parryActiveWindow > 0 || state.swipeParryWindow > 0) && guardDist < 0.36) {
         executeSuccessfulPlayerParry('PARADE', state.aiExtension >= 0.42);
         return;
@@ -1124,7 +1272,7 @@ function updatePlayer2Human(dt) {
       if (state.rightOfWay === 'ai') {
         state.rightOfWay = 'player';
         state.rowMeter = -55;
-        state.rowReason = 'PRIORITÉ P1 · P2 SHORT · 右方落空';
+        state.rowReason = 'PRIORITÉ P1 · 右方落空';
       }
     }
     return;
@@ -1161,8 +1309,8 @@ function evaluatePlayerLungeHit(dist) {
     state.masterStrikeActive = false;
     state.rightOfWay = 'ai';
     state.rowMeter = 90;
-    state.rowReason = 'COUP PASSÉ · PASSED TARGET · 贴身越肩落空';
-    showCallout(`COUP PASSÉ! (${dist.toFixed(2)}m)`, 'Too close! Blade passed behind target — Press [A] to pull back! · 过近越肩落空', 'text-amber-300', 1.0);
+    state.rowReason = 'COUP PASSÉ · 贴身越肩落空';
+    showCallout(`COUP PASSÉ! (${dist.toFixed(2)}m)`, '距离过近剑尖越过对手后背落空 — 快按 A 拉开距离！', 'text-amber-300', 1.0);
     return;
   }
 
@@ -1175,7 +1323,7 @@ function evaluatePlayerLungeHit(dist) {
     state.remiseCooldown = 0.08;
     state.rightOfWay = 'ai';
     state.rowMeter = 95;
-    showCallout('ESQUIVE ADVERSE! DUCK EVASION · 对手低蹲潜避', 'High thrust missed — Guard low line or Remise low! · 上路刺空提防低线反击', 'text-amber-300', 0.9);
+    showCallout('ESQUIVE ADVERSE! 对手低蹲潜避', '上路刺空 — 提防低线反刺或立即下压补剑！', 'text-amber-300', 0.9);
     if (state.gameMode === GameMode.SINGLE) launchAIScheme('passata_sotto');
     else state.p2RiposteBonusTimer = 0.78;
     return;
@@ -1190,8 +1338,8 @@ function evaluatePlayerLungeHit(dist) {
     injectBladeVibration(true, 6, -24);
     sound.playPisteFloorStrike();
     trigger3DWorldClashSparks(-state.tipX * 0.25, 0.03, state.aiZ - 0.32, '#fbbf24', 0xfbbf24, 20, 1.8);
-    state.rowReason = 'TOUCHE AU SOL · GROUNDED PISTE · 刺中接地剑道!';
-    showCallout('TOUCHE AU SOL! GROUNDED PISTE · 刺中接地剑道', 'Copper piste grounded the signal (no halt) — Steady aim & Remise! · 不亮灯不停表', 'text-amber-300', 0.95);
+    state.rowReason = 'TOUCHE AU SOL · 刺中接地金属剑道不亮灯!';
+    showCallout('TOUCHE AU SOL! 刺中接地剑道', '金属剑道接地吸收信号（不亮灯不停表）— 稳住准星立即补刺！', 'text-amber-300', 0.95);
     return;
   }
 
@@ -1220,8 +1368,8 @@ function evaluatePlayerLungeHit(dist) {
         2.3
       );
       spawnFloatingCombatText(pt.x, pt.y - 26, 'COQUILLE!', `${coq.coquilleRadiusCm}cm BELL DEFLECT`, '#cbd5e1');
-      state.rowReason = 'RICOCHET COQUILLE · BELL DEFLECT · 撞护手盘弹开!';
-      showCallout('RICOCHET SUR COQUILLE! · 撞中护手盘弹开', 'Grounded bell guard deflected tip (no halt) — Change line & LMB Remise! · 变线补刺', 'text-cyan-200', 1.05);
+      state.rowReason = 'RICOCHET COQUILLE · 撞中对手护手盘滑开!';
+      showCallout('RICOCHET SUR COQUILLE! 撞中护手盘', '接地护手盘弹开剑尖（不亮灯不停表）— 快变线再点左键发动 REMISE 续刺！', 'text-cyan-200', 1.05);
       return;
     }
   }
@@ -1239,7 +1387,7 @@ function evaluatePlayerLungeHit(dist) {
       state.playerActionTimer = 0.36;
       injectBladeVibration(true, 18, 12);
       sound.playClang(920, 1.0, false);
-      showCallout('PARADE DU MAÎTRE! · 教练封闭4号位', 'Coach is closing Quarte (4) — Aim at an open quadrant! · 请瞄准其他空当', 'text-amber-300', 1.2);
+      showCallout('PARADE DU MAÎTRE!', '教练正封闭 4号位，请瞄准其他空当扇区出剑', 'text-amber-300', 1.2);
       return;
     }
   } else {
@@ -1305,7 +1453,7 @@ function evaluatePlayerLungeHit(dist) {
       injectBladeVibration(true, (attackedQc.x >= 0 ? -1 : 1) * 24, 16);
       injectBladeVibration(false, (attackedQc.x >= 0 ? 1 : -1) * 12, -8);
 
-      state.rowReason = 'PARADE ADVERSE · RIVAL PARRY · 进攻被拨开';
+      state.rowReason = 'PARADE ADVERSE · 进攻被拨开';
       state.hitStopTimer = 0.045;
       state.camShake = 0.18;
       sound.playClang(920, 1.05, false);
@@ -1320,7 +1468,7 @@ function evaluatePlayerLungeHit(dist) {
         30,
         2.4
       );
-      showCallout('PARADE ADVERSE! RIVAL PARRY · 进攻被拨开', 'Watch red sector to counter-parry, or change line for LMB Remise! · 提防还击或变线补刺', 'text-rose-400', 1.0);
+      showCallout('PARADE ADVERSE! 进攻被拨开', '盯紧防位环红光格挡防反，或变线左键抢刺 REMISE！', 'text-rose-400', 1.0);
       return;
     }
   }
@@ -1342,8 +1490,8 @@ function evaluatePlayerLungeHit(dist) {
     sound.playBladeScrape(1380, 0.65);
     const pt = trigger3DWorldClashSparks(-state.tipX * 0.22, 1.15 - state.tipY * 0.18, state.aiZ - 0.18, '#e2e8f0', 0xe2e8f0, 16, 1.4);
     spawnFloatingCombatText(pt.x, pt.y - 24, `EFFLEURÉ ${impactForceN.toFixed(1)}N`, `< ${wCfg.triggerForceN.toFixed(2)}N SPRING`, '#cbd5e1');
-    state.rowReason = `EFFLEURÉ · GRAZED (${impactForceN.toFixed(1)}N < ${wCfg.triggerForceN}N) · 卸力`;
-    showCallout(`EFFLEURÉ! LIGHT GRAZE (${impactForceN.toFixed(1)}N) · 弹簧压力不足`, `Opponent pulled measure (< ${wCfg.triggerForceN}N) — Press forward & Remise! · 立即前压补刺`, 'text-amber-200', 1.0);
+    state.rowReason = `EFFLEURÉ · 擦滑卸力 (${impactForceN.toFixed(1)}N < ${wCfg.triggerForceN}N)`;
+    showCallout(`EFFLEURÉ! 弹簧压力不足 (${impactForceN.toFixed(1)}N)`, `对手后撤卸力未达 ${wCfg.triggerForceN}N 触发阈值 — 立即前压补刺！`, 'text-amber-200', 1.0);
     return;
   }
 
@@ -1355,45 +1503,75 @@ function evaluatePlayerLungeHit(dist) {
   const cx = vp1.centerX + state.tipX * 95;
   const cy = vp1.vh * 0.44 + state.tipY * 80;
 
+  const segP1Now = computeWorldBladeSegment3D({
+    isP1: true, baseZ: state.playerZ, jumpY: state.playerY, posture: state.playerPosture, ext: state.playerExtension,
+    guardX: state.guardX, guardY: state.guardY, tipX: state.tipX, tipY: state.tipY,
+    wType, slashPhase: state.sabreSlashPhase, attackQuad: state.quadrant, coupeLift: 0
+  });
+  const bodyHitP1 = evaluate3DAnatomicalBodyContact({
+    wType, attackerIsP1: true,
+    attackerTipX: state.tipX, attackerTipY: state.tipY, attackerQuad: state.quadrant,
+    defenderBaseZ: state.aiZ, defenderExt: state.aiExtension,
+    defenderPosture: state.aiPosture, defenderJumpY: state.aiY,
+    defenderGuardX: state.aiGuardX, defenderGuardY: state.aiGuardY,
+    attackerSeg: segP1Now, bladePoise: state.bladePoise, isMaster: wasMaster
+  });
+
   if (isOffTarget) {
     if (wType === WeaponId.FOIL) {
       state.pinnedHitActive = true;
-      state.pinnedHitTimer = 0.68;
-      state.pinnedWorldX = Math.max(-0.20, Math.min(0.20, state.tipX * 0.28));
-      state.pinnedWorldY = Math.max(-0.26, Math.min(0.24, -state.tipY * 0.28 + state.aiY));
+      state.pinnedHitTimer = 0.72;
+      state.pinnedWorldX = bodyHitP1.surfaceX;
+      state.pinnedWorldY = bodyHitP1.surfaceY;
+      state.pinnedWorldZ = bodyHitP1.surfaceZ;
+      state.pinnedZone = bodyHitP1.zone;
       state.pinnedIsOffTarget = true;
-      state.bladeBuckleAmp = 0.09;
-      spawnSparks(cx, cy, '#f8fafc', 22);
-      registerApparatusTouch('player', 'Hors Cible (Off-Target White Light · 刺偏白灯)', 'offtarget', true);
+      state.bladeBuckleAmp = Math.min(0.034, 0.022 + bodyHitP1.overreach * 0.04);
+      state.p2HitRecoil = 0.75;
+      state.p2HitRecoilX = bodyHitP1.relX;
+      state.p2HitRecoilY = bodyHitP1.relY;
+      state.p2HitZone = bodyHitP1.zone;
+      sound.playPointClick();
+      trigger3DWorldClashSparks(bodyHitP1.surfaceX, bodyHitP1.surfaceY, bodyHitP1.surfaceZ, '#f8fafc', 0xf8fafc, 26, 2.2);
+      registerApparatusTouch('player', 'Hors Cible (刺中金属背心外亮白灯)', 'offtarget', true);
     } else if (wType === WeaponId.SABRE) {
       state.playerAction = Action.RECOVERY;
       state.playerActionTimer = 0.30;
-      showCallout('COUP BAS (BELOW WAIST · 腰下无效)', 'Sabre valid waist-up only — Bout continues! · 交锋继续', 'text-amber-300', 0.9);
+      showCallout('COUP BAS (腰下无效)', '佩剑仅腰线以上有效，交锋继续', 'text-amber-300', 0.9);
     } else {
       state.playerAction = Action.RECOVERY;
       state.playerActionTimer = 0.30;
-      showCallout('COUP À CÔTÉ (MISSED · 刺偏擦袖)', 'Épée thrust missed silhouette — Bout continues! · 交锋继续', 'text-amber-300', 0.9);
+      showCallout('COUP À CÔTÉ (刺偏擦袖)', '重剑偏出轮廓落空，交锋继续！', 'text-amber-300', 0.9);
     }
     return;
   }
 
-  // Real 3D Column-Buckling Pin on Target!
+  // Real 3D Column-Buckling Pin on Exact Anatomical Target Surface + Defender Body Impact Recoil!
   state.pinnedHitActive = (wType !== WeaponId.SABRE);
-  state.pinnedHitTimer = 0.76;
-  state.pinnedWorldX = Math.max(-0.20, Math.min(0.20, state.tipX * 0.28));
-  state.pinnedWorldY = Math.max(-0.26, Math.min(0.24, -state.tipY * 0.28 + state.aiY));
+  state.pinnedHitTimer = 0.82;
+  state.pinnedWorldX = bodyHitP1.surfaceX;
+  state.pinnedWorldY = bodyHitP1.surfaceY;
+  state.pinnedWorldZ = bodyHitP1.surfaceZ;
+  state.pinnedZone = bodyHitP1.zone;
   state.pinnedIsOffTarget = false;
-  state.bladeBuckleAmp = Math.min(0.22, 0.07 + Math.max(0, (wCfg.optimalMax - dist)) * 0.16 + impactForceN * 0.005);
+  state.bladeBuckleAmp = Math.min(0.042, 0.026 + bodyHitP1.overreach * 0.045 + impactForceN * 0.001);
+
+  // Trigger physical torso/mask/arm impact recoil on P2/Rival!
+  state.p2HitRecoil = wasMaster ? 1.35 : 1.0;
+  state.p2HitRecoilX = bodyHitP1.relX;
+  state.p2HitRecoilY = bodyHitP1.relY;
+  state.p2HitZone = bodyHitP1.zone;
+  if (wType !== WeaponId.SABRE) sound.playPointClick();
 
   const sparkColor = wType === WeaponId.SABRE ? '#fb923c' : (wType === WeaponId.EPEE ? '#fbbf24' : '#34d399');
   trigger3DWorldClashSparks(
-    -state.pinnedWorldX * 0.7,
-    1.14 + state.pinnedWorldY * 0.55,
-    state.aiZ - 0.18,
+    bodyHitP1.surfaceX,
+    bodyHitP1.surfaceY,
+    bodyHitP1.surfaceZ,
     sparkColor,
     wType === WeaponId.SABRE ? 0xfb923c : (wType === WeaponId.EPEE ? 0xfbbf24 : 0x34d399),
-    wasMaster ? 52 : 38,
-    2.8
+    wasMaster ? 52 : 40,
+    2.9
   );
 
   const isRiposte = state.riposteBonusTimer > 0;
@@ -1404,7 +1582,7 @@ function evaluatePlayerLungeHit(dist) {
   if (wasMaster) {
     msg = `COUP DE MAÎTRE · ${wCfg.masterStrikeName}`;
   } else if (isRemise) {
-    msg = `Remise en ${getQuadrantShort(state.quadrant)} · Second Thrust · 二次续刺${forceBadge}`;
+    msg = `Remise en ${getQuadrantShort(state.quadrant)} · 二次续刺命中${forceBadge}`;
   } else if (wType === WeaponId.SABRE) {
     const cutDesc = getSabreCutName(state.quadrant);
     msg = isRiposte ? `Riposte · ${cutDesc}` : cutDesc;
@@ -1444,7 +1622,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.18, 0.25 / diffCfg.speedMult);
     sound.playShoeSqueak();
-    state.rowReason = 'ROMPRE & REPRISE · DISTANCE TRAP · 拉距诱空!';
+    state.rowReason = 'ROMPRE & REPRISE · 对手拉距诱空反击!';
     return;
   }
 
@@ -1461,7 +1639,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     } else {
       sound.playSwoosh(1.4);
     }
-    state.rowReason = `CONTRE-TEMPS AI → ${getQuadrantShort(state.aiAttackQuad)} · 迎击`;
+    state.rowReason = `AI 迎击 ${getQuadrantShort(state.aiAttackQuad)}`;
     return;
   }
 
@@ -1481,7 +1659,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiTargetY = qc.y;
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.18, 0.28 / diffCfg.speedMult);
-    state.rowReason = `BATTEMENT AI · BEAT ATTACK ${getQuadrantShort(state.aiAttackQuad)} · 敲剑攻`;
+    state.rowReason = `BATTEMENT AI · 敲剑攻 ${getQuadrantShort(state.aiAttackQuad)}`;
     return;
   }
 
@@ -1494,7 +1672,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.COUPE;
     state.aiActionTimer = Math.max(0.20, 0.30 / diffCfg.speedMult);
     sound.playSwoosh(1.35);
-    state.rowReason = `COUPÉ AI · CUT-OVER ${getQuadrantShort(state.aiAttackQuad)} · 挑剑攻`;
+    state.rowReason = `COUPÉ AI · 挑剑绕护手攻 ${getQuadrantShort(state.aiAttackQuad)}`;
     return;
   }
 
@@ -1508,7 +1686,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.16, 0.23 / diffCfg.speedMult);
     sound.playFootstep(true);
-    state.rowReason = `FLUNGE SABRE · FLYING CUT ${getQuadrantShort(state.aiAttackQuad)} · 飞跃斩`;
+    state.rowReason = `FLUNGE SABRE · 飞跃劈斩 ${getQuadrantShort(state.aiAttackQuad)}`;
     return;
   }
 
@@ -1520,7 +1698,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.17, 0.25 / diffCfg.speedMult);
     sound.playSwoosh(1.3);
-    state.rowReason = 'MOULINET TÊTE · HEAD CUT (5) · 当头直劈!';
+    state.rowReason = 'MOULINET TÊTE · 5号位当头直劈!';
     return;
   }
 
@@ -1532,7 +1710,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiTargetY = qc.y;
     state.aiAction = Action.FEINT1;
     state.aiActionTimer = Math.max(0.16, 0.23 / diffCfg.speedMult);
-    state.rowReason = 'FEINTE TÊTE → FLANC · HEAD FEINT · 虚劈头实斩肋!';
+    state.rowReason = 'FEINTE TÊTE → FLANC · 虚劈头实斩肋!';
     return;
   }
 
@@ -1543,7 +1721,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiTargetY = qc.y;
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.15, 0.22 / diffCfg.speedMult);
-    state.rowReason = 'SAIGNÉE AU POIGNET · WRIST SNIPE · 远距狙腕!';
+    state.rowReason = 'SAIGNÉE AU POIGNET · 重剑远距狙击你的手腕!';
     return;
   }
 
@@ -1557,7 +1735,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.16, 0.24 / diffCfg.speedMult);
     sound.playShoeSqueak();
-    state.rowReason = 'TOUCHE AU PIED · FOOT SNIPE · 下潜点脚!';
+    state.rowReason = 'TOUCHE AU PIED · 重剑下潜狙击前脚面!';
     return;
   }
 
@@ -1571,7 +1749,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.17, 0.26 / diffCfg.speedMult);
     sound.playFootstep(true);
-    state.rowReason = `FLÈCHE AI · BLITZ ${getQuadrantShort(state.aiAttackQuad)} · 飞冲`;
+    state.rowReason = `FLÈCHE AI · 飞冲 ${getQuadrantShort(state.aiAttackQuad)}`;
     return;
   }
 
@@ -1583,7 +1761,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiTargetY = qc.y;
     state.aiAction = Action.FEINT1;
     state.aiActionTimer = Math.max(0.16, 0.25 / diffCfg.speedMult);
-    state.rowReason = 'FEINTE AI · YELLOW DECEPTION · 黄光虚晃';
+    state.rowReason = 'FEINTE AI · 黄光虚晃变线';
     return;
   }
 
@@ -1599,7 +1777,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiTargetY = qc.y;
     state.aiAction = Action.FEINT1;
     state.aiActionTimer = Math.max(0.14, 0.22 / diffCfg.speedMult);
-    state.rowReason = 'DOUBLE FEINTE · DOUBLE DECEPTION · 双重虚晃';
+    state.rowReason = 'DOUBLE FEINTE · 双重虚晃';
     return;
   }
 
@@ -1613,7 +1791,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.16, 0.24 / diffCfg.speedMult);
     sound.playShoeSqueak();
-    state.rowReason = 'PASSATA SOTTO · DUCKING THRUST · 低蹲潜刺';
+    state.rowReason = 'PASSATA SOTTO · 低蹲潜刺';
     return;
   }
 
@@ -1626,7 +1804,7 @@ function launchAIScheme(schemeName, forceLowLine = false) {
     state.aiAction = Action.PREP;
     state.aiActionTimer = Math.max(0.15, 0.22 / diffCfg.speedMult);
     sound.playShoeSqueak();
-    state.rowReason = 'ARRÊT AI · RETREATING STOP-HIT · 后撤截击';
+    state.rowReason = 'ARRÊT AI · 后撤截击';
     return;
   }
 
@@ -1672,7 +1850,7 @@ function decideAI(dt, dist, diffCfg, wCfg) {
     state.aiTargetX = qc.x;
     state.aiTargetY = qc.y;
 
-    if (wType === WeaponId.FOIL && state.pointInLineActive && dist < 2.65) {
+    if (wType === WeaponId.FOIL && state.pointInLineActive && dist < 3.12) {
       state.pointInLineActive = false;
       state.pointInLineTimer = 0;
       launchAIScheme('beat_lunge');
@@ -1685,25 +1863,25 @@ function decideAI(dt, dist, diffCfg, wCfg) {
       return true;
     }
 
-    const maxAttackDist = wType === WeaponId.EPEE ? 2.82 : (wType === WeaponId.SABRE ? 2.65 : 2.72);
-    const freqMult = wType === WeaponId.SABRE ? 0.74 : (wType === WeaponId.EPEE ? 0.48 : 0.56);
+    const maxAttackDist = wType === WeaponId.EPEE ? 3.30 : (wType === WeaponId.SABRE ? 3.12 : 3.08);
+    const freqMult = wType === WeaponId.SABRE ? 0.76 : (wType === WeaponId.EPEE ? 0.52 : 0.60);
 
     if (dist < maxAttackDist && dist > wCfg.minMeasure && Math.random() < freqMult * diffCfg.attackFreq) {
       const roll = Math.random();
       if (wType === WeaponId.SABRE) {
-        if (dist > 2.22 && roll < 0.32) launchAIScheme('flunge_sabre');
+        if (dist > 2.68 && roll < 0.32) launchAIScheme('flunge_sabre');
         else if (roll < 0.58 && state.quadrant !== Quadrant.NW) launchAIScheme('moulinet_tete');
         else if (roll < 0.80 && Math.random() < diffCfg.feintChance) launchAIScheme('feint_tete_flanc');
         else if (roll < 0.92) launchAIScheme('beat_lunge');
         else launchAIScheme('direct');
       } else if (wType === WeaponId.EPEE) {
-        if (dist > 2.34 && state.quadrant !== Quadrant.NE && roll < 0.52) launchAIScheme('saignee_poignet');
+        if (dist > 2.82 && state.quadrant !== Quadrant.NE && roll < 0.52) launchAIScheme('saignee_poignet');
         else if (roll < 0.35 && state.playerPosture !== Posture.JUMP) launchAIScheme('touche_au_pied');
-        else if (dist > 2.38 && roll < 0.55) launchAIScheme('fleche_blitz');
+        else if (dist > 2.84 && roll < 0.55) launchAIScheme('fleche_blitz');
         else if (roll < 0.76) launchAIScheme('stop_hit_retreat');
         else launchAIScheme('direct');
       } else {
-        if (dist > 2.32 && roll < 0.22) launchAIScheme('fleche_blitz');
+        if (dist > 2.78 && roll < 0.22) launchAIScheme('fleche_blitz');
         else if (roll < 0.25) launchAIScheme('beat_lunge');
         else if (roll < 0.45) launchAIScheme('coupe_glide');
         else if (roll < 0.68 && Math.random() < diffCfg.feintChance) launchAIScheme('feint_disengage');
@@ -1715,21 +1893,21 @@ function decideAI(dt, dist, diffCfg, wCfg) {
     }
   }
 
-  // Rhythmic Olympic "En-Garde Bounce / Measure Contest" Footwork with Inertial Piste Traction!
+  // Rhythmic Long-Measure Olympic Footwork: fencers keep open critical distance (2.45m - 3.15m) & launch stretched-out attacks from afar!
   const nowS = performance.now() * 0.001;
   let desiredVel = 0;
   if (wType === WeaponId.SABRE) {
-    if (dist > 2.20) desiredVel = -2.75 * diffCfg.speedMult;
-    else if (dist < 1.68) desiredVel = 2.55 * diffCfg.speedMult;
-    else desiredVel = Math.sin(nowS * 8.8) * 1.85;
+    if (dist > 2.86) desiredVel = -2.75 * diffCfg.speedMult;
+    else if (dist < 2.34) desiredVel = 2.60 * diffCfg.speedMult;
+    else desiredVel = Math.sin(nowS * 8.8) * 1.75;
   } else if (wType === WeaponId.EPEE) {
-    if (dist > 2.64) desiredVel = -1.65 * diffCfg.speedMult;
-    else if (dist < 2.06) desiredVel = 2.05 * diffCfg.speedMult;
-    else desiredVel = Math.sin(nowS * 5.2) * 1.10;
+    if (dist > 3.16) desiredVel = -1.70 * diffCfg.speedMult;
+    else if (dist < 2.58) desiredVel = 2.15 * diffCfg.speedMult;
+    else desiredVel = Math.sin(nowS * 5.2) * 1.05;
   } else {
-    if (dist > 2.42) desiredVel = -2.05 * diffCfg.speedMult;
-    else if (dist < 1.85) desiredVel = 2.25 * diffCfg.speedMult;
-    else desiredVel = Math.sin(nowS * 6.4) * 1.35;
+    if (dist > 2.90) desiredVel = -2.05 * diffCfg.speedMult;
+    else if (dist < 2.38) desiredVel = 2.30 * diffCfg.speedMult;
+    else desiredVel = Math.sin(nowS * 6.4) * 1.25;
   }
   state.aiVelZ = accelerateWithPisteTraction(state.aiVelZ, desiredVel, dt);
   state.aiZ += state.aiVelZ * dt;
@@ -1759,7 +1937,7 @@ function updateAIOpponent(dt) {
     state.aiVelZ = accelerateWithPisteTraction(state.aiVelZ, 0.35, dt);
     state.aiZ += state.aiVelZ * dt;
     if (state.aiActionTimer <= 0) {
-      if (dist < 2.68) launchAIScheme(state.aiScheme === 'riposte_croise' ? 'riposte_croise' : 'riposte_direct');
+      if (dist < 3.15) launchAIScheme(state.aiScheme === 'riposte_croise' ? 'riposte_croise' : 'riposte_direct');
       else state.aiAction = Action.IDLE;
     }
     return;
@@ -1856,8 +2034,8 @@ function updateAIOpponent(dt) {
     const guardDist = Math.hypot(state.guardX - targetQc.x, state.guardY - targetQc.y);
     if ((state.parryActiveWindow > 0 || state.swipeParryWindow > 0) &&
         state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD && state.parryWhiffLockout <= 0 &&
-        (state.quadrant === state.aiAttackQuad || guardDist < 0.35) && dist < 2.75) {
-      executeSuccessfulPlayerParry(state.selectedWeapon === WeaponId.SABRE && state.quadrant === Quadrant.NW ? 'QUINTE (5 ROOF · 架顶)' : 'PARADE', false);
+        (state.quadrant === state.aiAttackQuad || guardDist < 0.35) && dist < 3.24) {
+      executeSuccessfulPlayerParry(state.selectedWeapon === WeaponId.SABRE && state.quadrant === Quadrant.NW ? 'QUINTE (5号架顶)' : 'PARADE', false);
       return;
     }
 
@@ -1879,7 +2057,11 @@ function updateAIOpponent(dt) {
     state.aiActionTimer -= dt;
     const lungeBoost = (state.aiScheme === 'fleche_blitz' || state.aiScheme === 'flunge_sabre') ? 1.35 : 1.0;
     const lungeProg = 1 - Math.max(0, state.aiActionTimer / 0.25);
-    const desiredLungeVel = lungeProg < 0.62 ? (-4.25 * diffCfg.speedMult * lungeBoost) : (-1.15 * diffCfg.speedMult);
+    const fullStretchStopDist = state.selectedWeapon === WeaponId.EPEE ? 2.44 : 2.32;
+    // Plant front heel firmly once at full-stretch measure so the lunge finishes fully extended, never cramped!
+    const desiredLungeVel = dist <= fullStretchStopDist
+      ? 0
+      : (lungeProg < 0.62 ? (-4.65 * diffCfg.speedMult * lungeBoost) : (-0.95 * diffCfg.speedMult));
     state.aiExtension = Math.min(1, state.aiExtension + dt * 10.6 * diffCfg.speedMult);
     state.aiVelZ = accelerateWithPisteTraction(state.aiVelZ, desiredLungeVel, dt, 38, 22);
     state.aiZ += state.aiVelZ * dt;
@@ -1897,10 +2079,10 @@ function updateAIOpponent(dt) {
       state.riposteBonusTimer = 0.85;
       state.rightOfWay = 'player';
       state.rowMeter = -95;
-      state.rowReason = 'ESQUIVE · DUCK EVADE · 下蹲闪避';
+      state.rowReason = 'ESQUIVE · 下蹲闪避成功';
       addStyleMomentum(185, '💨 ESQUIVE!', 'PERFECT DUCK EVADE', null, null, '#34d399');
       state.speedLinesAlpha = 0.68;
-      showCallout('ESQUIVE! DUCKED HIGH LINE · 闪过上路', 'Left-Click immediately to counter-strike! · 立即左键反击', 'text-emerald-300', 0.9);
+      showCallout('ESQUIVE! 闪过上路攻击', '立即点击左键反击！', 'text-emerald-300', 0.9);
       return;
     }
     if (aiLowAttack && state.playerPosture === Posture.JUMP && state.aiExtension > 0.62) {
@@ -1909,22 +2091,22 @@ function updateAIOpponent(dt) {
       state.riposteBonusTimer = 0.85;
       state.rightOfWay = 'player';
       state.rowMeter = -95;
-      state.rowReason = 'BOND · JUMP EVADE · 跃起闪避';
+      state.rowReason = 'BOND · 跃起闪避成功';
       addStyleMomentum(185, '⚡ BOND EVADE!', 'AIRBORNE DODGE', null, null, '#818cf8');
       state.speedLinesAlpha = 0.68;
-      showCallout('JUMP EVADE! CLEARED LOW LINE · 跃过下路', 'Left-Click immediately to counter-strike! · 立即左键反击', 'text-indigo-300', 0.9);
+      showCallout('JUMP EVADE! 跃起躲过下路', '立即左键反击！', 'text-indigo-300', 0.9);
       return;
     }
 
     const qc = getQuadCoords(state.aiAttackQuad, state.selectedWeapon);
     const guardDist = Math.hypot(state.guardX - qc.x, state.guardY - qc.y);
 
-    if (dist < 2.64 && state.aiExtension > 0.24 && state.playerAction !== Action.RECOVERY &&
+    if (dist < 3.16 && state.aiExtension > 0.24 && state.playerAction !== Action.RECOVERY &&
         state.bladePoise >= CONSTANTS.POISE_LOSS_THRESHOLD && state.parryWhiffLockout <= 0) {
       if ((state.parryActiveWindow > 0 || state.swipeParryWindow > 0) && guardDist < 0.37) {
         const isPerfect = state.aiExtension >= 0.40;
         executeSuccessfulPlayerParry(
-          state.selectedWeapon === WeaponId.SABRE && state.quadrant === Quadrant.NW ? 'QUINTE (5 ROOF · 架顶)' : (isPerfect ? 'PARADE PARFAITE' : 'PARADE'),
+          state.selectedWeapon === WeaponId.SABRE && state.quadrant === Quadrant.NW ? 'QUINTE (5号架顶)' : (isPerfect ? 'PARADE PARFAITE' : 'PARADE'),
           isPerfect
         );
         return;
@@ -1940,7 +2122,7 @@ function updateAIOpponent(dt) {
         injectBladeVibration(false, 22, 16);
         sound.playCoquilleDeflect(state.selectedWeapon === WeaponId.EPEE);
         trigger3DWorldClashSparks(state.bindContactWorldX, state.bindContactWorldY, state.bindContactWorldZ, '#38bdf8', 0x38bdf8, 22, 2.2);
-        state.rowReason = `OPPOSITION (${state.bindLeverage.toFixed(1)}x) · FORTE BLOCK · 强剑压开!`;
+        state.rowReason = `OPPOSITION (${state.bindLeverage.toFixed(1)}x) · 强剑身架开来剑!`;
         return;
       }
 
@@ -1961,17 +2143,37 @@ function updateAIOpponent(dt) {
           state.rowMeter = -88;
           sound.playBladeScrape(1320, 0.6);
           addStyleMomentum(140, 'ROMPRE LA MESURE!', `PULLED DISTANCE (${aiForceN.toFixed(1)}N)`, null, null, '#34d399');
-          showCallout(`PULLED MEASURE! (${aiForceN.toFixed(1)}N < ${wCfg.triggerForceN}N) · 拉距卸力`, 'Retreat kept tip below spring force — Counter-attack now! · 立即反攻', 'text-emerald-300', 1.0);
+          showCallout(`拉距卸力成功! (${aiForceN.toFixed(1)}N < ${wCfg.triggerForceN}N)`, '后撤步让对手弹簧剑头未压响 — 立即反攻！', 'text-emerald-300', 1.0);
           return;
         }
 
-        const vp1 = getViewportMetrics(false);
-        const cx = vp1.centerX + qc.x * 135;
-        const cy = vp1.vh * 0.47 + qc.y * 105;
-        spawnSparks(cx, cy, '#f43f5e', 34);
+        const segAiNow = computeWorldBladeSegment3D({
+          isP1: false, baseZ: state.aiZ, jumpY: state.aiY, posture: state.aiPosture, ext: state.aiExtension,
+          guardX: state.aiGuardX, guardY: state.aiGuardY, tipX: state.p2TipX, tipY: state.p2TipY,
+          wType: state.selectedWeapon, slashPhase: state.p2SabreSlashPhase, attackQuad: state.aiAttackQuad, coupeLift: state.aiCoupeLiftY
+        });
+        const aiBodyHit = evaluate3DAnatomicalBodyContact({
+          wType: state.selectedWeapon, attackerIsP1: false,
+          attackerTipX: qc.x, attackerTipY: qc.y, attackerQuad: state.aiAttackQuad,
+          defenderBaseZ: state.playerZ, defenderExt: state.playerExtension,
+          defenderPosture: state.playerPosture, defenderJumpY: state.playerY,
+          defenderGuardX: state.guardX, defenderGuardY: state.guardY,
+          attackerSeg: segAiNow, bladePoise: 92, isMaster: false
+        });
         state.p2PinnedHitActive = (state.selectedWeapon !== WeaponId.SABRE);
-        state.p2PinnedHitTimer = 0.65;
-        state.p2BladeBuckleAmp = 0.12;
+        state.p2PinnedHitTimer = 0.78;
+        state.p2PinnedWorldX = aiBodyHit.surfaceX;
+        state.p2PinnedWorldY = aiBodyHit.surfaceY;
+        state.p2PinnedWorldZ = aiBodyHit.surfaceZ;
+        state.p2PinnedZone = aiBodyHit.zone;
+        state.p2PinnedIsOffTarget = false;
+        state.p2BladeBuckleAmp = Math.min(0.040, 0.026 + aiBodyHit.overreach * 0.05);
+        state.p1HitRecoil = 1.0;
+        state.p1HitRecoilX = aiBodyHit.relX;
+        state.p1HitRecoilY = aiBodyHit.relY;
+        state.p1HitZone = aiBodyHit.zone;
+        if (state.selectedWeapon !== WeaponId.SABRE) sound.playPointClick();
+        trigger3DWorldClashSparks(aiBodyHit.surfaceX, aiBodyHit.surfaceY, aiBodyHit.surfaceZ, '#f43f5e', 0xf43f5e, 38, 2.8);
         registerApparatusTouch('ai', `${state.aiSchemeLabel} → ${getQuadrantShort(state.aiAttackQuad)}`, 'touch_ai', false);
         return;
       }
@@ -1983,7 +2185,7 @@ function updateAIOpponent(dt) {
       state.rightOfWay = 'player';
       state.rowMeter = -65;
       state.riposteBonusTimer = 0.45;
-      state.rowReason = 'ATTAQUE NON · FELL SHORT · 对手刺空!';
+      state.rowReason = 'ATTAQUE NON · 对手刺空失位!';
     }
     return;
   }
@@ -2010,7 +2212,7 @@ function updateContinuousPriorite(dt) {
 
   if (state.lockoutActive) {
     const remMs = Math.max(0, Math.round(state.lockoutTimer * 1000));
-    state.rowReason = `BOÎTIER LIVE · LOCKOUT ${remMs}ms · 闭锁中`;
+    state.rowReason = `BOÎTIER LIVE · 闭锁倒计时 ${remMs}ms`;
     return;
   }
 
@@ -2018,21 +2220,21 @@ function updateContinuousPriorite(dt) {
     const dist = state.aiZ - state.playerZ;
     const wristCovered = (state.quadrant === Quadrant.NE && state.bladePoise >= 65);
     if (state.bladeBindActive) {
-      const levTxt = state.bindLeverage >= 1.15 ? `FORTE ${state.bindLeverage.toFixed(1)}x ADV · 占优` : (state.bindLeverage <= 0.85 ? `FOIBLE ${state.bindLeverage.toFixed(1)}x · 受压` : 'EVEN BIND · 均势');
+      const levTxt = state.bindLeverage >= 1.15 ? `FORTE ${state.bindLeverage.toFixed(1)}x 占优` : (state.bindLeverage <= 0.85 ? `FOIBLE ${state.bindLeverage.toFixed(1)}x 受压` : '均势交剑');
       state.rowMeter += (-55 * (state.bindLeverage - 0.5) - state.rowMeter) * Math.min(1, dt * 8);
       state.rowReason = `FER SUR FER · ${levTxt}`;
     } else if (dist <= CONSTANTS.EPEE_WRIST_MAX_REACH && dist > CONSTANTS.EPEE_BODY_MAX_REACH && state.quadrant === Quadrant.NE) {
       state.rowMeter += (-55 - state.rowMeter) * Math.min(1, dt * 8);
-      state.rowReason = `POIGNET WINDOW (${dist.toFixed(2)}m) · WRIST SNIPE · 狙腕!`;
+      state.rowReason = `POIGNET WINDOW (${dist.toFixed(2)}m) · 可远距狙腕!`;
     } else if (!wristCovered && dist <= CONSTANTS.EPEE_WRIST_MAX_REACH) {
       state.rowMeter += (55 - state.rowMeter) * Math.min(1, dt * 8);
-      state.rowReason = 'POIGNET EXPOSÉ · WRIST EXPOSED · 手腕暴露!';
+      state.rowReason = 'POIGNET EXPOSÉ · 手腕暴露提防截刺!';
     } else if (state.aiAction === Action.PREP || state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2) {
       state.rowMeter += (-60 - state.rowMeter) * Math.min(1, dt * 8);
-      state.rowReason = 'ARRÊT 45ms · SINGLE-LIGHT WINDOW · 单灯截刺';
+      state.rowReason = 'ARRÊT 45ms · 抢先45ms闭锁单灯良机';
     } else {
       state.rowMeter += (-15 - state.rowMeter) * Math.min(1, dt * 5);
-      state.rowReason = 'COQUILLE FERMÉE · SIXTE GUARD · 深碗护腕';
+      state.rowReason = 'COQUILLE FERMÉE · 6号位深碗护腕对峙';
     }
     return;
   }
@@ -2058,35 +2260,35 @@ function updateContinuousPriorite(dt) {
   if (state.bladePoise < CONSTANTS.POISE_LOSS_THRESHOLD) {
     state.rightOfWay = 'ai';
     state.rowMeter += (75 - state.rowMeter) * Math.min(1, dt * 8);
-    state.rowReason = 'GARDE OUVERTE · UNSTABLE · 剑尖失稳';
+    state.rowReason = 'GARDE OUVERTE · 剑尖失稳';
   } else if (state.parryWhiffLockout > 0) {
     state.rightOfWay = 'ai';
     state.rowMeter = 90;
-    state.rowReason = 'PARADE VIDE · WHIFF LOCKOUT · 挥空硬直';
+    state.rowReason = 'PARADE VIDE · 挥空硬直';
   } else if (state.bladeBindActive) {
     const levAdvantage = state.bindLeverage - 1.0;
     state.rowMeter += (-65 * levAdvantage - state.rowMeter) * Math.min(1, dt * 7);
-    const zoneTag = state.bindStationP1 < 0.42 ? 'FORTE 强剑' : (state.bindStationP1 > 0.68 ? 'FOIBLE 弱尖' : 'MEDIO 中段');
-    state.rowReason = `FER (${zoneTag} ${state.bindLeverage.toFixed(1)}x) · BLADE BIND · 抗剑`;
+    const zoneTag = state.bindStationP1 < 0.42 ? 'FORTE强剑身' : (state.bindStationP1 > 0.68 ? 'FOIBLE弱剑尖' : 'MEDIO中段');
+    state.rowReason = `FER (${zoneTag} ${state.bindLeverage.toFixed(1)}x) · 抗剑角力`;
   } else if ((state.keys.right || state.playerMarchTimer > 0) && state.marchHoldDuration <= CONSTANTS.MARCH_HESITATION_LIMIT) {
     state.rightOfWay = 'player';
     state.rowMeter += (-65 - state.rowMeter) * Math.min(1, dt * 8);
-    state.rowReason = 'PRIORITÉ GAUCHE · LEFT INITIATIVE · 左方主动';
+    state.rowReason = 'PRIORITÉ GAUCHE · 左方步法主动';
   } else if (state.gameMode === GameMode.SPLIT_2P && (state.keys.p2Advance || state.p2MarchTimer > 0) && state.p2MarchHoldDuration <= CONSTANTS.MARCH_HESITATION_LIMIT) {
     state.rightOfWay = 'ai';
     state.rowMeter += (65 - state.rowMeter) * Math.min(1, dt * 8);
-    state.rowReason = 'PRIORITÉ DROITE · RIGHT INITIATIVE · 右方主动';
+    state.rowReason = 'PRIORITÉ DROITE · 右方步法主动';
   } else if (state.keys.left) {
     state.rowMeter += (35 - state.rowMeter) * Math.min(1, dt * 6);
     if (state.rowMeter > 20) {
       state.rightOfWay = 'ai';
-      state.rowReason = 'PRIORITÉ DROITE · RIGHT PRESSING · 右方压进';
+      state.rowReason = 'PRIORITÉ DROITE · 右方压进';
     }
   } else if (state.beatCooldown <= 0.2) {
     state.rowMeter += (0 - state.rowMeter) * Math.min(1, dt * 4);
     if (Math.abs(state.rowMeter) < 15) {
       state.rightOfWay = 'none';
-      state.rowReason = 'NEUTRAL · BALANCED MEASURE · 控距试探';
+      state.rowReason = 'NEUTRAL · 控距试探';
     }
   }
 }
@@ -2166,7 +2368,7 @@ function updateTutorialUI() {
   setDomStyle(DOM.tutProgressBar, 'width', `${pct}%`);
 }
 
-function advanceTutorialProgress(increment = 1, praiseMsg = 'Nice! · 漂亮！') {
+function advanceTutorialProgress(increment = 1, praiseMsg = '漂亮！') {
   if (state.gameMode !== GameMode.TUTORIAL || state.tutorialAdvancing) return;
   const lesson = TUTORIAL_LESSONS[state.tutorialStep];
   state.tutorialProgress = Math.min(lesson.goalCount, state.tutorialProgress + increment);
@@ -2177,7 +2379,7 @@ function advanceTutorialProgress(increment = 1, praiseMsg = 'Nice! · 漂亮！'
     state.tutorialAdvancing = true;
     refVoice.speakCue('bravo');
     if (state.tutorialStep < TUTORIAL_LESSONS.length - 1) {
-      showCallout(`LESSON ${lesson.step} COMPLETE! · 本课完成`, `Next up: ${TUTORIAL_LESSONS[state.tutorialStep + 1].title}`, 'text-emerald-400', 1.5);
+      showCallout(`第 ${lesson.step} 课完成!`, `即将进入：${TUTORIAL_LESSONS[state.tutorialStep + 1].title}`, 'text-emerald-400', 1.5);
       clearTimeout(state._tutAdvanceTimer);
       state._tutAdvanceTimer = setTimeout(() => {
         if (state.gameMode === GameMode.TUTORIAL) {
@@ -2185,10 +2387,10 @@ function advanceTutorialProgress(increment = 1, praiseMsg = 'Nice! · 漂亮！'
         }
       }, 1500);
     } else {
-      showCallout('ACADEMY GRADUATED! · 学院全部通关!', 'All 3 Olympic weapons mastered! Open MENU to start Championship! · 开启锦标赛', 'text-amber-300', 3.0);
+      showCallout('击剑学院全部通关!', '已掌握花/重/佩三套真实剑术物理！点击右上菜单开启锦标赛', 'text-amber-300', 3.0);
     }
   } else {
-    showCallout(`DRILL PROGRESS ${state.tutorialProgress}/${lesson.goalCount} · 进度`, praiseMsg, 'text-cyan-300', 1.0);
+    showCallout(`训练进度 ${state.tutorialProgress}/${lesson.goalCount}`, praiseMsg, 'text-cyan-300', 1.0);
   }
 }
 
@@ -2199,14 +2401,14 @@ function updateTutorialCoachAI(dt) {
   updateOpponentGuardAndPosture(dt, { isHumanP2: false, maxGuardSpeed: 3.8 });
 
   if (state.aiAction === Action.IDLE) {
-    if (dist > 2.22) state.aiZ -= 1.3 * dt;
-    else if (dist < 1.82) state.aiZ += 1.3 * dt;
+    if (dist > 2.72) state.aiZ -= 1.5 * dt;
+    else if (dist < 2.36) state.aiZ += 1.5 * dt;
   }
 
   if (lesson.step === 1) {
     if (state.bladePoise >= 70 && !state.tutorialVisitedQuads[state.quadrant]) {
       state.tutorialVisitedQuads[state.quadrant] = true;
-      advanceTutorialProgress(1, `Sector checked: ${getQuadrantShort(state.quadrant)} · 已巡检`);
+      advanceTutorialProgress(1, `已巡检 ${getQuadrantShort(state.quadrant)}`);
     }
     return;
   }
@@ -2282,7 +2484,7 @@ function updateTutorialCoachAI(dt) {
       state.rightOfWay = 'player';
       state.rowMeter = -95;
       addStyleMomentum(160, 'ESQUIVE!', 'DUCK COUNTER', null, null, '#34d399');
-      showCallout('ESQUIVE! DUCK EVASION · 下蹲闪避成功', 'Left-Click immediately to counter-score! · 立即左键反刺得分', 'text-emerald-300', 1.0);
+      showCallout('ESQUIVE! 下蹲闪避成功', '立即点击左键反刺得分！', 'text-emerald-300', 1.0);
       return;
     }
 
@@ -2325,7 +2527,7 @@ function updateTutorialCoachAI(dt) {
       state.aiActionTimer = 0.42;
       state.rightOfWay = 'ai';
       state.rowMeter = 85;
-      state.rowReason = `COACH CUE ${getQuadrantShort(pickQuad)} · SWIPE PARRY · 滑鼠格挡`;
+      state.rowReason = `教练喂招 ${getQuadrantShort(pickQuad)} · 滑鼠格挡`;
     } else if (lesson.step === 5) {
       state.aiAttackQuad = state.quadrant;
       state.aiFeintTargetQuad = Math.random() < 0.5 ? Quadrant.NW : Quadrant.NE;
@@ -2336,7 +2538,7 @@ function updateTutorialCoachAI(dt) {
       state.aiActionTimer = 0.36;
       state.rightOfWay = 'ai';
       state.rowMeter = 85;
-      state.rowReason = 'YELLOW FEINT · HOLD YOUR PARRY · 黄光别抢挡';
+      state.rowReason = '黄光虚晃 · 忍住别抢挡';
     } else if (lesson.step === 6) {
       state.aiTargetX = -0.35;
       state.aiTargetY = 0.25;
@@ -2348,7 +2550,7 @@ function updateTutorialCoachAI(dt) {
       if (Math.random() < 0.55) {
         state.aiAction = Action.PREP;
         state.aiActionTimer = 0.42;
-        state.rowReason = 'COACH HEAD CUT · RAISE MOUSE FOR QUINTE(5)! · 上抬架顶';
+        state.rowReason = '教练劈头 · 鼠标上抬横刀架顶(5)!';
       }
     }
   }
@@ -2360,8 +2562,12 @@ function resetPositionsForNextPoint(skipCadence = false) {
   state.lockoutTimer = 0;
   state.lockoutFirstSide = 'none';
   state.lockoutSecondSide = 'none';
-  state.playerZ = -1.3;
-  state.aiZ = 1.3;
+  state.replayActive = false;
+  state.replayFrames = [];
+  state.replayCursor = 0;
+  state.replayRecordAccum = 0;
+  state.playerZ = -1.75;
+  state.aiZ = 1.75;
   state.playerVelZ = 0;
   state.aiVelZ = 0;
   state.playerY = 0;
@@ -2413,7 +2619,7 @@ function resetPositionsForNextPoint(skipCadence = false) {
   state.p2Stamina = 100;
   state.rightOfWay = 'none';
   state.rowMeter = 0;
-  state.rowReason = 'EN GARDE · READY · 准备';
+  state.rowReason = 'EN GARDE · 准备';
   state.bladeTrail = [];
   state.p2BladeTrail = [];
   setScoringLamps(false, false, false, false);
@@ -2494,7 +2700,7 @@ function triggerCorpsACorpsHalt(offender = 'p1') {
     const mid = (state.aiZ + state.playerZ) * 0.5;
     state.playerZ = mid - 0.85;
     state.aiZ = mid + 0.85;
-    showCallout('CORPS-À-CORPS! · 贴身违例', 'Illegal body contact — Distance reset automatically · 已自动拉开距离', 'text-amber-300', 1.1);
+    showCallout('CORPS-À-CORPS!', '贴身过近违例，已自动拉开距离', 'text-amber-300', 1.1);
     return;
   }
   state.roundPhase = RoundPhase.HALT;
@@ -2509,42 +2715,42 @@ function triggerCorpsACorpsHalt(offender = 'p1') {
     if (state.playerYellowCards === 0) {
       state.playerYellowCards = 1;
       state.rowMeter = 50;
-      state.rowReason = 'CORPS-À-CORPS P1 · YELLOW CARD · 黄牌警告';
+      state.rowReason = 'CORPS-À-CORPS P1 · 黄牌警告';
       state.lastPointColor = '#fbbf24';
       sound.playScoreMachine('neutral');
-      showCallout('HALTE! — CARTON JAUNE (P1) · 黄牌警告', 'Illegal body collision warning (next offense awards Red Card +1) · 再犯罚红牌', 'text-amber-300', 1.9);
+      showCallout('HALTE! — CARTON JAUNE (P1)', '贴身冲撞违例黄牌警告一次（再犯直接罚分）', 'text-amber-300', 1.9);
       refVoice.speakCue('corps_jaune');
     } else {
       state.aiScore++;
       state.rowMeter = 100;
-      state.rowReason = 'CARTON ROUGE P1 · RED CARD · 红牌罚分';
+      state.rowReason = 'CARTON ROUGE P1 · 红牌罚分';
       state.lastPointColor = '#f43f5e';
       setScoringLamps(false, true, false, false);
       sound.playScoreMachine('ai');
       state.screenFlash = 0.34;
       state.screenFlashColor = '#f43f5e';
-      showCallout('HALTE! — CARTON ROUGE · 红牌罚分', 'Repeated body collision — Penalty point awarded to Right (+1)! · 右方获判1分', 'text-rose-400', 1.9);
+      showCallout('HALTE! — CARTON ROUGE', '再次冲撞违例，右方直接获判 1 分！', 'text-rose-400', 1.9);
       refVoice.speakCue('corps_rouge');
     }
   } else {
     if (state.aiYellowCards === 0) {
       state.aiYellowCards = 1;
       state.rowMeter = -50;
-      state.rowReason = 'CORPS-À-CORPS P2 · YELLOW CARD · 黄牌警告';
+      state.rowReason = 'CORPS-À-CORPS P2 · 黄牌警告';
       state.lastPointColor = '#fbbf24';
       sound.playScoreMachine('neutral');
-      showCallout('HALTE! — CARTON JAUNE (P2) · 黄牌警告', 'Right fencer penalized with Yellow Card for body collision · 右方冲撞黄牌', 'text-amber-300', 1.9);
+      showCallout('HALTE! — CARTON JAUNE (P2)', '右方贴身冲撞违例黄牌警告一次', 'text-amber-300', 1.9);
       refVoice.speakCue('corps_jaune');
     } else {
       state.playerScore++;
       state.rowMeter = -100;
-      state.rowReason = 'CARTON ROUGE P2 · RED CARD · 红牌罚分';
+      state.rowReason = 'CARTON ROUGE P2 · 红牌罚分';
       state.lastPointColor = '#10b981';
       setScoringLamps(true, false, false, false);
       sound.playScoreMachine('player');
       state.screenFlash = 0.34;
       state.screenFlashColor = '#10b981';
-      showCallout('HALTE! — CARTON ROUGE · 红牌罚分', 'Repeated collision by Right — Penalty point awarded to Left (+1)! · 左方获判1分', 'text-emerald-400', 1.9);
+      showCallout('HALTE! — CARTON ROUGE', '右方再次冲撞违例，左方获判 1 分！', 'text-emerald-400', 1.9);
       refVoice.speakCue('corps_rouge');
     }
   }
@@ -2571,20 +2777,31 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
       setScoringLamps(true, winner === 'epee_double', false, false);
       state._lampResetTimer = setTimeout(() => setScoringLamps(false, false, false, false), 900);
       if (lesson.step === 3) advanceTutorialProgress(1, reason);
-      else if (lesson.step === 4 && state.riposteBonusTimer > 0) advanceTutorialProgress(1, 'Clean Parry-Riposte! · 漂亮的格挡还击！');
-      else if (lesson.step === 4) showCallout('PARRY FIRST! · 请先格挡再还击', 'Swipe into the red threat sector to parry first, then LMB Riposte! · 先格挡再还击', 'text-amber-300', 1.3);
-      else if (lesson.step === 5 && state.riposteBonusTimer > 0) advanceTutorialProgress(1, 'Feint read & countered! · 成功识破假动作反击！');
+      else if (lesson.step === 4 && state.riposteBonusTimer > 0) advanceTutorialProgress(1, '漂亮的格挡还击 (Parade-Riposte)！');
+      else if (lesson.step === 4) showCallout('请先格挡再还击', '先迎向红光扇区格挡，再左键还击得分', 'text-amber-300', 1.3);
+      else if (lesson.step === 5 && state.riposteBonusTimer > 0) advanceTutorialProgress(1, '成功识破假动作反击！');
       else if (lesson.step === 6 || lesson.step === 7) advanceTutorialProgress(1, reason);
     } else if (winner === 'offtarget') {
       setScoringLamps(false, false, offTargetSide === 'p1', offTargetSide === 'p2');
       state._lampResetTimer = setTimeout(() => setScoringLamps(false, false, false, false), 900);
-      showCallout('HORS CIBLE (WHITE LIGHT · 白灯无效)', 'Foil scores on conductive torso lamé only · 花剑仅躯干金属背心有效', 'text-slate-200', 1.2);
+      showCallout('HORS CIBLE (白灯无效)', '花剑仅躯干金属背心有效', 'text-slate-200', 1.2);
     }
     return;
   }
 
+  // Capture final impact frame into 3D replay buffer!
+  recordReplayFrameSnapshot();
+  const isCleanTouch = (winner === 'player' || winner === 'ai' || winner === 'epee_double');
+  const willFinishAfter = (
+    (winner === 'player' && state.playerScore + 1 >= state.targetScore) ||
+    (winner === 'ai' && state.aiScore + 1 >= state.targetScore) ||
+    (winner === 'epee_double' && !(state.playerScore >= state.targetScore - 1 && state.aiScore >= state.targetScore - 1) &&
+      (state.playerScore + 1 >= state.targetScore || state.aiScore + 1 >= state.targetScore))
+  );
+  state.replaySummaryText = reason;
+  state.replayActive = false;
   state.roundPhase = RoundPhase.HALT;
-  state.phaseTimer = 2.0;
+  state.phaseTimer = (state.autoReplayEnabled && isCleanTouch && !willFinishAfter && state.replayFrames.length >= 14) ? 2.75 : 2.0;
   state.hitStopTimer = 0.020;
   state.camShake = 0.26;
   state.p2CamShake = 0.26;
@@ -2598,7 +2815,7 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
     state.playerScore++;
     if (state.riposteBonusTimer > 0) state.ripostesLanded++;
     state.rowMeter = -100;
-    state.rowReason = `POINT GAUCHE · ${p1Name} SCORES · 得分`;
+    state.rowReason = `POINT GAUCHE · ${p1Name} 得分`;
     state.lastPointColor = '#10b981';
     state.slowMoTimer = 0.44;
     state.timeScale = 0.22;
@@ -2631,7 +2848,7 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
     const vp = getViewportMetrics(state.gameMode === GameMode.SPLIT_2P);
     spawnFloatingCombatText(vp.centerX, vp.vh * 0.38, state.gameMode === GameMode.SPLIT_2P ? 'P2 TOUCHÉ!' : 'TOUCHÉ ADVERSE!', reason, '#fb7185');
     state.rowMeter = 100;
-    state.rowReason = `POINT DROITE · ${p2Name} SCORES · 得分`;
+    state.rowReason = `POINT DROITE · ${p2Name} 得分`;
     state.lastPointColor = '#f43f5e';
     setScoringLamps(false, true, false, false);
     sound.playScoreMachine('ai');
@@ -2647,7 +2864,7 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
       state.aiScore++;
     }
     state.rowMeter = 0;
-    state.rowReason = 'COUP DOUBLE · DOUBLE TOUCH · 双灯同得';
+    state.rowReason = 'COUP DOUBLE · 双灯同得';
     state.lastPointColor = '#fbbf24';
     state.slowMoTimer = 0.32;
     state.timeScale = 0.28;
@@ -2655,23 +2872,23 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
     sound.playScoreMachine('player');
     state.screenFlash = 0.24;
     state.screenFlashColor = '#fbbf24';
-    showCallout('COUP DOUBLE! (ÉPÉE +1 / +1 · 双灯同得)', bothAtMatchPoint ? 'La Belle tied at match point — Replay phrase! · 决胜分互中重来' : reason, 'text-amber-300', 1.95);
+    showCallout('COUP DOUBLE! (重剑双灯 +1 / +1)', bothAtMatchPoint ? '决胜分互中重来' : reason, 'text-amber-300', 1.95);
     refVoice.speakCue('coup_double');
   } else if (winner === 'double') {
     state.rowMeter = 0;
-    state.rowReason = 'SIMULTANÉ · NO POINT · 同时互中不计分';
+    state.rowReason = 'SIMULTANÉ · 同时互中不计分';
     state.lastPointColor = '#fbbf24';
     setScoringLamps(true, true, false, false);
     sound.playScoreMachine('neutral');
-    showCallout('SIMULTANÉ! · 同时互中', reason || 'Simultaneous attack without priority — No touch! · 不计分重来', 'text-amber-300', 1.8);
+    showCallout('SIMULTANÉ!', reason || '同时互中无优先权，不计分', 'text-amber-300', 1.8);
     refVoice.speakCue('simultaneous');
   } else if (winner === 'offtarget') {
     state.rowMeter = offTargetSide === 'p1' ? -30 : 30;
-    state.rowReason = 'HORS CIBLE · WHITE LIGHT · 白灯无效';
+    state.rowReason = 'HORS CIBLE · 白灯无效部位';
     state.lastPointColor = '#f8fafc';
     setScoringLamps(false, false, offTargetSide === 'p1', offTargetSide === 'p2');
     sound.playScoreMachine('neutral');
-    showCallout('HORS CIBLE (WHITE LIGHT · 白灯)', reason, 'text-slate-100', 1.75);
+    showCallout('HORS CIBLE (白灯)', reason, 'text-slate-100', 1.75);
     refVoice.speakCue('offtarget');
   }
 
@@ -2703,8 +2920,8 @@ function finishBout() {
     setDomText(
       DOM.podiumTitleText,
       state.gameMode === GameMode.SPLIT_2P
-        ? (won ? 'VICTORY P1 // LEFT WINS! · 左屏夺冠' : 'VICTORY P2 // RIGHT WINS! · 右屏夺冠')
-        : (won ? 'VICTORY // CHAMPION! · 荣膺桂冠' : 'DEFEAT // SO CLOSE · 惜败强敌')
+        ? (won ? 'VICTOIRE P1 // 左屏夺冠!' : 'VICTOIRE P2 // 右屏夺冠!')
+        : (won ? 'VICTOIRE // 荣膺桂冠!' : 'DÉFAITE // 惜败强敌')
     );
     setDomText(DOM.podiumScoreText, `${state.playerScore} : ${state.aiScore}`);
     setDomText(DOM.podiumRankText, finalRank);
@@ -2715,7 +2932,7 @@ function finishBout() {
     setDomText(
       DOM.podiumQuoteText,
       state.gameMode === GameMode.SPLIT_2P
-        ? `"Electrifying split-screen duel! Final score ${state.playerScore} : ${state.aiScore}. · 精彩绝伦的双人交锋！"`
+        ? `"精彩绝伦的双人同屏交锋！最终比分 ${state.playerScore} : ${state.aiScore}。"`
         : (won ? diff.winQuote : diff.loseQuote)
     );
     setDomText(DOM.podiumStatParries, String(state.parriesLanded));
@@ -2861,6 +3078,9 @@ function updateGame(dt) {
       state.p2BladeBuckleAmp = 0;
     }
   }
+  if (state.p1HitRecoil > 0) state.p1HitRecoil = Math.max(0, state.p1HitRecoil - dt * 2.8);
+  if (state.p2HitRecoil > 0) state.p2HitRecoil = Math.max(0, state.p2HitRecoil - dt * 2.8);
+  if (state.parryClashTimer > 0) state.parryClashTimer = Math.max(0, state.parryClashTimer - dt);
 
   const rawTargetHR = 90 + (100 - state.stamina) * 0.85 + (100 - state.bladePoise) * 0.45 + (state.roundPhase === RoundPhase.FIGHTING ? 18 : 0);
   const targetHR = Math.max(CONSTANTS.HEART_RATE_MIN, Math.min(CONSTANTS.HEART_RATE_MAX, rawTargetHR));
@@ -2943,15 +3163,15 @@ function updateGame(dt) {
     state.phaseTimer -= dt;
     if (state.readySubStage === 0 && state.phaseTimer <= 0.52) {
       state.readySubStage = 1;
-      state.rowReason = 'PRÊTS? · READY? · 预备';
-      showCallout('PRÊTS?', 'Ready? · 预备…', 'text-amber-300', 0.45);
+      state.rowReason = 'PRÊTS? · 预备';
+      showCallout('PRÊTS?', '预备…', 'text-amber-300', 0.45);
       refVoice.speakCue('prets');
     }
     if (state.phaseTimer <= 0) {
       state.roundPhase = RoundPhase.FIGHTING;
       state.readySubStage = 2;
-      state.rowReason = 'ALLEZ! · FENCE! · 开始交锋';
-      showCallout('ALLEZ!', 'Fence! · 开始交锋！', 'text-emerald-400', 0.75);
+      state.rowReason = 'ALLEZ! · 开始交锋';
+      showCallout('ALLEZ!', '开始交锋！', 'text-emerald-400', 0.75);
       refVoice.speakCue('allez');
     }
     sound.tickDynamicArenaMusic(false, 0);
@@ -2961,6 +3181,23 @@ function updateGame(dt) {
 
   if (state.roundPhase === RoundPhase.HALT) {
     state.phaseTimer -= dt;
+    // Engage automatic 3D Broadcast Slow-Motion Replay after initial 0.58s first-person impact beat!
+    if (!state.replayActive && state.autoReplayEnabled && state.phaseTimer <= 2.16 && state.phaseTimer > 0.75 &&
+        state.replayFrames.length >= 14 && state.playerScore < state.targetScore && state.aiScore < state.targetScore &&
+        (state.lastPointColor === '#10b981' || state.lastPointColor === '#f43f5e' || state.lastPointColor === '#fbbf24')) {
+      state.replayActive = true;
+      state.replayCursor = Math.max(0, state.replayFrames.length - 52);
+      state.replayCameraAngle = (state.playerScore + state.aiScore) % 2 === 0 ? 0.20 : -0.20;
+    }
+    if (state.replayActive) {
+      state.replayCursor += dt * 23.0; // ~0.38x Olympic slow-motion playback of 60Hz buffer
+      if (state.replayCursor >= state.replayFrames.length - 1) {
+        state.replayCursor = state.replayFrames.length - 1;
+      }
+      if (state.phaseTimer <= 0.14) {
+        state.replayActive = false;
+      }
+    }
     if (!state.pinnedHitActive) {
       state.playerExtension += (0 - state.playerExtension) * dt * 8;
     }
@@ -3031,8 +3268,10 @@ function updateGame(dt) {
   let targetPlayerVelZ = 0;
   if (state.playerAction === Action.LUNGE) {
     const lungeProgress = 1 - Math.max(0, state.playerActionTimer / 0.27);
-    const peakLungeV = state.selectedWeapon === WeaponId.SABRE ? 5.35 : 4.75;
-    targetPlayerVelZ = lungeProgress < 0.56 ? peakLungeV : 0.85;
+    const peakLungeV = state.selectedWeapon === WeaponId.SABRE ? 5.65 : 5.15;
+    const stopDist1 = state.selectedWeapon === WeaponId.EPEE ? 2.44 : 2.32;
+    // Plant front heel firmly once reaching full-extension Olympic lunge distance!
+    targetPlayerVelZ = dist <= stopDist1 ? 0 : (lungeProgress < 0.58 ? peakLungeV : 0.75);
   } else if (state.playerAction === Action.REMISE) {
     targetPlayerVelZ = 1.15;
   } else if (state.playerAction === Action.RECOVERY) {
@@ -3059,11 +3298,11 @@ function updateGame(dt) {
     if (state.pointInLineTimer >= 0.42) {
       if (!state.pointInLineActive) {
         state.pointInLineActive = true;
-        showCallout('POINTE EN LIGNE! (POINT-IN-LINE · 伸臂亮剑)', 'Right-of-way established unless opponent beats your blade! · 对手不敲剑直冲将失权', 'text-cyan-300', 1.1);
+        showCallout('POINTE EN LIGNE! (伸臂亮剑威慑)', '对手若不先敲剑直冲将直接撞上你的剑尖！', 'text-cyan-300', 1.1);
       }
       state.rightOfWay = 'player';
       state.rowMeter = -85;
-      state.rowReason = 'POINTE EN LIGNE · POINT-IN-LINE · 亮剑先手';
+      state.rowReason = 'POINTE EN LIGNE · 花剑亮剑先手';
     }
   } else {
     state.pointInLineTimer = Math.max(0, state.pointInLineTimer - dt * 3.0);
@@ -3114,7 +3353,7 @@ function updateGame(dt) {
       if (state.rightOfWay === 'player' && state.riposteBonusTimer <= 0) {
         state.rightOfWay = 'none';
         state.rowMeter = 25;
-        state.rowReason = 'FIN D\'ATTAQUE · ATTACK OVER · 落空收剑';
+        state.rowReason = 'FIN D\'ATTAQUE · 落空收剑';
       }
     }
   } else if (state.playerAction === Action.PARRY) {
@@ -3137,6 +3376,13 @@ function updateGame(dt) {
 
   updateContinuousPriorite(dt);
 
+  // Record 60Hz 3D Pose & Blade Snapshot for Instant Broadcast Replay!
+  state.replayRecordAccum += dt;
+  if (state.replayRecordAccum >= 0.0165) {
+    state.replayRecordAccum = 0;
+    recordReplayFrameSnapshot();
+  }
+
   if (state.aiZ - state.playerZ < CONSTANTS.CORPS_A_CORPS_DIST && state.roundPhase === RoundPhase.FIGHTING) {
     if (state.playerVelZ > 0.4 && state.playerVelZ >= -state.aiVelZ) {
       triggerCorpsACorpsHalt('p1');
@@ -3152,9 +3398,9 @@ function updateGame(dt) {
   }
 
   if (state.playerZ < -CONSTANTS.PISTE_HALF_LENGTH) {
-    triggerPoint('ai', 'Sortie de Piste (Crossed Rear Limit · 退过底线出界)', 'sortie');
+    triggerPoint('ai', 'Sortie de Piste (退过底线出界)', 'sortie');
   } else if (state.aiZ > CONSTANTS.PISTE_HALF_LENGTH) {
-    triggerPoint('player', 'Sortie de Piste (Crossed Rear Limit · 退过底线出界)', 'sortie');
+    triggerPoint('player', 'Sortie de Piste (退过底线出界)', 'sortie');
   }
 
   const isMatchPtNow = (state.playerScore === state.targetScore - 1 || state.aiScore === state.targetScore - 1);

@@ -60,7 +60,7 @@ function renderCurrentFlashcard() {
   setDomText(DOM.fcControlHint, card.control);
 
   const isMastered = !!state.fcMasteredIds[card.id];
-  setDomText(DOM.btnFcToggleMaster, isMastered ? '★ MASTERED · 已掌握' : '☆ MARK MASTERED · 标记');
+  setDomText(DOM.btnFcToggleMaster, isMastered ? '★ 已掌握 MASTERED' : '☆ 标记已掌握');
   setDomClass(
     DOM.btnFcToggleMaster,
     isMastered
@@ -107,14 +107,14 @@ function generateFlashcardQuizQuestion() {
   state.fcQuizOptions = choices;
 
   setDomText(DOM.fcQuizPromptFr, correctItem.fr);
-  setDomText(DOM.fcQuizPromptEn, correctItem.phonetic);
-  setDomText(DOM.fcQuizFeedback, 'Select the matching English / Chinese tactical meaning · 请选择对应释义：');
+  setDomText(DOM.fcQuizPromptEn, `${correctItem.en} · ${correctItem.phonetic}`);
+  setDomText(DOM.fcQuizFeedback, '请选择对应的中文与战术释义：');
   setDomClass(DOM.fcQuizFeedback, 'mt-3 text-center text-xs font-bold text-slate-300 min-h-[20px]');
 
   const letters = ['A', 'B', 'C', 'D'];
   document.querySelectorAll('.fc-quiz-opt').forEach((btn, idx) => {
     const item = choices[idx];
-    btn.textContent = `${letters[idx]}. ${item.en} — ${item.enSub} (${item.zh})`;
+    btn.textContent = `${letters[idx]}. ${item.zh} (${item.zhSub})`;
     btn.className = 'fc-quiz-opt text-left p-2.5 bg-slate-800 hover:bg-slate-700 border-l-2 border-slate-600 text-xs font-bold text-slate-100 transition';
     btn.disabled = false;
   });
@@ -136,12 +136,12 @@ function answerFlashcardQuiz(optIdx) {
     state.fcQuizStreak++;
     state.fcMasteredIds[correct.id] = true;
     sound.playScoreMachine('player');
-    setDomText(DOM.fcQuizFeedback, `Correct! ${correct.fr} = ${correct.en} (${correct.zh}) · 回答正确！`);
+    setDomText(DOM.fcQuizFeedback, `回答正确！${correct.fr} = ${correct.zh}（${correct.en}）`);
     setDomClass(DOM.fcQuizFeedback, 'mt-3 text-center text-xs font-bold text-emerald-400 min-h-[20px]');
   } else {
     state.fcQuizStreak = 0;
     sound.playScoreMachine('ai');
-    setDomText(DOM.fcQuizFeedback, `Not quite! Answer: ${correct.en} · ${correct.zh}`);
+    setDomText(DOM.fcQuizFeedback, `再想想！正确答案是：${correct.zh}（${correct.en}）`);
     setDomClass(DOM.fcQuizFeedback, 'mt-3 text-center text-xs font-bold text-rose-400 min-h-[20px]');
   }
 
@@ -258,43 +258,43 @@ function updateHUDWidgets() {
   setDomText(DOM.guardNameText, getQuadrantLabel(state.quadrant, state.selectedWeapon));
 
   if (state.parryWhiffLockout > 0) {
-    setDomText(DOM.rightOfWayText, 'GUARD WHIFF · Press [A] Retreat! · 挥空快后撤');
+    setDomText(DOM.rightOfWayText, '挥空硬直 · 快按 A 后撤!');
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-rose-400 font-bold leading-tight');
   } else if (state.bladePoise < CONSTANTS.POISE_LOSS_THRESHOLD) {
-    setDomText(DOM.rightOfWayText, 'LOW POISE · Steady mouse! · 稳住鼠标恢复剑威');
+    setDomText(DOM.rightOfWayText, '剑尖失稳 · 稳住鼠标恢复!');
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-rose-400 font-bold leading-tight');
   } else if (dist < wCfg.minMeasure) {
-    setDomText(DOM.rightOfWayText, 'TOO CLOSE · Press [A] Retreat! · 距离过近后撤');
+    setDomText(DOM.rightOfWayText, '距离过近 · 按 A 后撤步!');
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-amber-400 font-bold leading-tight');
   } else if (state.riposteBonusTimer > 0) {
-    setDomText(DOM.rightOfWayText, state.selectedWeapon === WeaponId.SABRE ? 'RIPOSTE! Slash now (LMB) · 立即挥砍还击!' : 'RIPOSTE! Lunge now (LMB) · 立即左键还击!');
+    setDomText(DOM.rightOfWayText, state.selectedWeapon === WeaponId.SABRE ? 'RIPOSTE · 立即挥砍反杀!' : 'RIPOSTE · 立即左键还击!');
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-emerald-400 font-bold leading-tight');
   } else if (state.aiAction !== Action.IDLE && state.aiAction !== Action.RECOVERY && state.aiAction !== Action.PARRIED) {
     const isYellowFeint = (state.aiAction === Action.FEINT1 || state.aiAction === Action.FEINT2);
     setDomText(
       DOM.rightOfWayText,
       isYellowFeint
-        ? 'FEINT WARNING · Hold your parry! · 黄光虚晃别抢挡!'
-        : (state.selectedWeapon === WeaponId.SABRE && state.aiAttackQuad === Quadrant.NW ? 'HEAD CUT · Raise mouse for Quinte(5)! · 上抬架顶!' : 'INCOMING · Swipe into red sector! · 红光同侧弹反!')
+        ? '黄光虚晃 · 忍住别抢挡!'
+        : (state.selectedWeapon === WeaponId.SABRE && state.aiAttackQuad === Quadrant.NW ? '当头劈来 · 上抬鼠标横刀架顶!' : '红光来袭 · 滑向同侧完美弹反!')
     );
     setDomClass(DOM.rightOfWayText, isYellowFeint ? 'text-[10px] text-amber-300 font-bold leading-tight' : 'text-[10px] text-rose-400 font-bold leading-tight');
   } else if (state.selectedWeapon === WeaponId.SABRE) {
-    setDomText(DOM.rightOfWayText, 'SABRE: Sweep/LMB Slash · Up = Quinte(5) · 佩剑劈砍/架顶');
+    setDomText(DOM.rightOfWayText, '佩剑：挥鼠/左键大弧度劈砍 · 上抬架顶');
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-orange-300 font-semibold leading-tight');
   } else if (state.selectedWeapon === WeaponId.EPEE) {
     setDomText(
       DOM.rightOfWayText,
       dist <= CONSTANTS.EPEE_WRIST_MAX_REACH && dist > CONSTANTS.EPEE_BODY_MAX_REACH && state.quadrant === Quadrant.NE
-        ? 'WRIST IN 2.74m RANGE · LMB Snipe! · 手腕入射程点刺!'
-        : 'ÉPÉE: Snipe closest Wrist · 45ms Double · 远距狙腕'
+        ? '手腕进入 3.24m 远距狙击线 · 左键伸臂点刺!'
+        : '重剑：手腕最近可远距狙击 · 40ms双灯'
     );
     setDomClass(DOM.rightOfWayText, 'text-[10px] text-amber-300 font-semibold leading-tight');
   } else {
     setDomText(
       DOM.rightOfWayText,
       dist <= wCfg.optimalMax
-        ? `OPTIMAL RANGE (${dist.toFixed(2)}m) · LMB Lunge · 最佳射程突刺`
-        : 'WASD Move/Dodge · LMB Lunge · RMB Parry · 步法攻防'
+        ? `最佳射程 (${dist.toFixed(2)}m) · 左键突刺`
+        : 'WASD 步法跳蹲 · 左键出剑 · 右键格挡'
     );
     setDomClass(DOM.rightOfWayText, dist <= wCfg.optimalMax ? 'text-[10px] text-cyan-300 font-semibold leading-tight' : 'text-[10px] text-slate-400 font-medium leading-tight');
   }
@@ -342,6 +342,10 @@ function wireDOMEvents() {
   window.addEventListener('mousemove', (e) => updatePointerPosition(e.clientX, e.clientY));
   canvas.addEventListener('mousedown', (e) => {
     if (state.paused) return;
+    if (state.replayActive) {
+      skipInstant3DReplay();
+      return;
+    }
     if (e.button === 0) performPlayerLunge();
     else if (e.button === 2) performPlayerParry();
   });
@@ -398,7 +402,17 @@ function wireDOMEvents() {
     }
     if (e.code === 'Space') {
       e.preventDefault();
-      performPlayerLunge();
+      if (state.replayActive) skipInstant3DReplay();
+      else performPlayerLunge();
+    }
+    if (e.code === 'KeyR') {
+      e.preventDefault();
+      if (!state.paused && state.roundPhase === RoundPhase.HALT && state.replayFrames.length >= 10) {
+        startInstant3DReplay();
+        sound.playUIClick(1120);
+      } else if (DOM.btnReplayToggle) {
+        DOM.btnReplayToggle.click();
+      }
     }
     if (e.code === 'KeyE') {
       e.preventDefault();
@@ -457,6 +471,21 @@ function wireDOMEvents() {
   if (DOM.btnLunge) DOM.btnLunge.addEventListener('click', () => performPlayerLunge());
   if (DOM.btnMasterStrike) DOM.btnMasterStrike.addEventListener('click', () => performPlayerMasterStrike());
 
+  if (DOM.btnReplayToggle) {
+    DOM.btnReplayToggle.addEventListener('click', () => {
+      if (!state.paused && state.roundPhase === RoundPhase.HALT && state.replayFrames.length >= 10 && !state.replayActive) {
+        startInstant3DReplay();
+        sound.playUIClick(1140);
+        return;
+      }
+      state.autoReplayEnabled = !state.autoReplayEnabled;
+      if (!state.autoReplayEnabled) state.replayActive = false;
+      sound.playUIClick(state.autoReplayEnabled ? 1060 : 740);
+      DOM.btnReplayToggle.innerHTML = state.autoReplayEnabled
+        ? '<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="hidden sm:inline">RALENTI: AUTO [R]</span><span class="sm:hidden">REPLAY</span>'
+        : '<span class="w-2 h-2 rounded-full bg-slate-500"></span><span class="hidden sm:inline">RALENTI: MANUEL [R]</span><span class="sm:hidden">MANUAL</span>';
+    });
+  }
   DOM.btnToggleTouchHud.addEventListener('click', () => DOM.touchControlsDrawer.classList.toggle('hidden'));
   DOM.btnOpenFlashcards.addEventListener('click', () => openFlashcardModal());
   DOM.btnModalOpenFlashcards.addEventListener('click', () => openFlashcardModal());

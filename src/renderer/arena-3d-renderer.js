@@ -97,11 +97,19 @@ const ThreeArenaEngine = (() => {
       clashPointLight.position.set(0, 1.2, 0);
       scene.add(clashPointLight);
 
-      clashContactOrb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.026, 12, 10),
-        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.0 })
+      clashContactOrb = new THREE.Group();
+      const coreSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.024, 14, 12),
+        new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.9 })
       );
+      const flareRing = new THREE.Mesh(
+        new THREE.SphereGeometry(0.036, 12, 10),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
+      );
+      clashContactOrb.add(coreSphere, flareRing);
+      clashContactOrb.userData = { coreSphere, flareRing };
       clashContactOrb.frustumCulled = false;
+      clashContactOrb.visible = false;
       scene.add(clashContactOrb);
 
       arena = Fencing3DAssets.buildGrandPalaisArena3D(scene);
@@ -245,20 +253,37 @@ const ThreeArenaEngine = (() => {
 
   // Updates weapon visibility, conductive lamé shells & team accent colors on a 3D Fencer Rig
   function syncFencerEquipment(fencer, wType, inStrikeRange, rivalProfile) {
-    fencer.foilLameMesh.visible = (wType === WeaponId.FOIL);
-    fencer.sabreLameTorsoMesh.visible = (wType === WeaponId.SABRE);
-    fencer.bibMesh.material.color.setHex(
-      wType === WeaponId.EPEE ? 0xf8fafc : (wType === WeaponId.SABRE ? 0xfed7aa : 0xbae6fd)
+    // Single-surface material assignment: ZERO overlapping torso shells = ZERO Z-fighting or garment clipping!
+    if (fencer.lowerTorsoMesh && fencer.upperTorsoMesh) {
+      fencer.lowerTorsoMesh.visible = true;
+      fencer.upperTorsoMesh.visible = true;
+      if (wType === WeaponId.FOIL) {
+        fencer.lowerTorsoMesh.material = fencer.foilLameMat;
+        fencer.upperTorsoMesh.material = fencer.foilLameMat;
+      } else if (wType === WeaponId.SABRE) {
+        fencer.lowerTorsoMesh.material = fencer.kevlarMat;
+        fencer.upperTorsoMesh.material = fencer.sabreLameMat;
+      } else {
+        fencer.lowerTorsoMesh.material = fencer.kevlarMat;
+        fencer.upperTorsoMesh.material = fencer.kevlarMat;
+      }
+    }
+    fencer.bibMesh.material = (
+      wType === WeaponId.EPEE ? fencer.kevlarMat : (wType === WeaponId.SABRE ? fencer.sabreLameMat : fencer.foilLameMat)
     );
+    if (fencer.maskCordMesh) {
+      fencer.maskCordMesh.visible = (wType !== WeaponId.EPEE);
+    }
     fencer.hilts.foilHilt.visible = (wType === WeaponId.FOIL);
     fencer.hilts.epeeHilt.visible = (wType === WeaponId.EPEE);
     fencer.hilts.sabreHilt.visible = (wType === WeaponId.SABRE);
 
-    // Sabre conductive sleeves vs white Kevlar sleeves
+    // Sabre conductive sleeves vs white Kevlar sleeves (including both shoulder/elbow bottomBall AND elbow/wrist topBall!)
     const armMat = wType === WeaponId.SABRE ? fencer.sabreLameMat : fencer.kevlarMat;
     for (const seg of [fencer.leadUpperArm, fencer.leadForearm, fencer.rearUpperArm, fencer.rearForearm]) {
       seg.mesh.material = armMat;
       if (seg.bottomBall) seg.bottomBall.material = armMat;
+      if (seg.topBall) seg.topBall.material = armMat;
     }
 
     if (!fencer.isP1 && rivalProfile) {
@@ -306,91 +331,138 @@ const ThreeArenaEngine = (() => {
 
     const {
       baseZ, jumpY, posture, ext, guardX, guardY,
-      action, attackQuad, coupeLift, slashPhase, wType, inRange, rivalProfile
+      action, attackQuad, coupeLift, slashPhase, wType, inRange, rivalProfile,
+      oppPelvisZ = (fencer.isP1 ? 99 : -99)
     } = cfg;
 
     syncFencerEquipment(fencer, wType, inRange, rivalProfile);
 
     // dirZ: +1 for P1 (advancing toward +Z), -1 for P2/Rival (advancing toward -Z)
     const dirZ = fencer.isP1 ? 1 : -1;
-    // Both fencers place their lead sword side along world -X (P1's right = screen-right; Rival's Sixte/Poignet wrist = screen-right!)
     const swordXSign = -1;
 
     const epeeBounce = (wType === WeaponId.EPEE && posture === Posture.STAND && ext < 0.05)
       ? Math.abs(Math.sin(nowSec * 6.8 + (fencer.isP1 ? 0 : 1.4))) * 0.045
       : 0;
     const breath = Math.sin(nowSec * 2.8 + (fencer.isP1 ? 0 : 1.1)) * 0.012;
-    const crouchDrop = posture === Posture.DUCK ? -0.26 : 0;
+    const crouchDrop = posture === Posture.DUCK ? -0.22 : 0;
     const airLift = posture === Posture.JUMP ? Math.max(0.14, jumpY * 0.55) : Math.max(0, jumpY * 0.55);
 
-    // Deep pelvic drop on La Fente lunge while forward Z surges toward target
-    const lungePelvisZ = baseZ + dirZ * (ext * 0.52);
-    const pelvisY = Math.max(0.42, 0.78 - ext * 0.14 + crouchDrop + airLift + epeeBounce + breath);
+    // Olympic La Fente Split: deep pelvic drop + explosive forward surge while rear foot anchors wide behind!
+    let lungePelvisZ = baseZ + dirZ * (ext * 0.50);
+    const pairMidZ = Math.abs(oppPelvisZ) < 50 ? (baseZ + oppPelvisZ) * 0.5 : (dirZ * 99);
+    if (Math.abs(oppPelvisZ) < 50) {
+      if (dirZ > 0) lungePelvisZ = Math.min(lungePelvisZ, pairMidZ - 0.52, oppPelvisZ - 1.04);
+      else lungePelvisZ = Math.max(lungePelvisZ, pairMidZ + 0.52, oppPelvisZ + 1.04);
+    }
+    // Deep, athletic Olympic lunge sink (pelvis drops 21cm so front thigh goes horizontal & rear leg locks straight!)
+    const pelvisY = Math.max(0.46, 0.82 - ext * 0.21 + crouchDrop + airLift + epeeBounce + breath);
 
-    // Exact 60° En-Garde profile yaw:
-    // P1 (+0.86 rad): local -X (right side) is FORWARD (+Z) & screen-right (-X); chest (+Z) faces open +X/+Z!
-    // P2 (PI - 0.86 rad): local +X is FORWARD (-Z) & screen-right (-X); chest (+Z) faces open +X/-Z!
-    const baseYaw = fencer.isP1 ? 0.86 : (Math.PI - 0.86);
+    // Turn slightly deeper into sleek profile on full lunge (+0.14 rad) to maximize shoulder-to-tip reach!
+    const lungeYawTurn = ext * 0.14;
+    const baseYaw = fencer.isP1 ? (0.86 + lungeYawTurn) : (Math.PI - 0.86 - lungeYawTurn);
     fencer.pelvisGroup.position.set(0, pelvisY, lungePelvisZ);
     fencer.pelvisGroup.rotation.set(0, baseYaw, 0);
 
-    // Subtle athletic forward lean & counter-twist on torso + dead-on target lock for 1600N mask!
-    fencer.torsoGroup.rotation.set(0.08 + ext * 0.16, fencer.isP1 ? -0.22 : 0.22, 0);
+    // Physical Body-Impact Recoil (Torso & Mask absorb axial spring-tip impulse when struck!)
+    const hitRec = fencer.isP1 ? (state.p1HitRecoil || 0) : (state.p2HitRecoil || 0);
+    const hitRecX = fencer.isP1 ? (state.p1HitRecoilX || 0) : (state.p2HitRecoilX || 0);
+    const hitRecY = fencer.isP1 ? (state.p1HitRecoilY || 0) : (state.p2HitRecoilY || 0);
+    const hitZone = fencer.isP1 ? (state.p1HitZone || 'torso_lame') : (state.p2HitZone || 'torso_lame');
+    const recoilPulse = hitRec > 0 ? Math.sin(hitRec * Math.PI) : 0;
+
+    // Slight backward pelvic jolt when struck squarely on chest/mask
+    fencer.pelvisGroup.position.z = lungePelvisZ - dirZ * (recoilPulse * 0.055);
+
+    // Dynamic forward torso lean (~24° on full lunge) + physical impact recoil twist & jolt!
+    const forwardLean = 0.08 + ext * 0.28 - recoilPulse * 0.14;
+    const recoilTwistY = recoilPulse * (hitRecX * 1.45);
+    const recoilBackZ = (fencer.isP1 ? 1 : -1) * (ext * 0.30 - recoilPulse * (0.22 + Math.max(0, hitRecY) * 0.35));
+    fencer.torsoGroup.rotation.set(
+      forwardLean * 0.65 - recoilPulse * 0.10,
+      (fencer.isP1 ? (-0.22 - ext * 0.10) : (0.22 + ext * 0.10)) + recoilTwistY,
+      recoilBackZ
+    );
+    const maskSnap = (hitZone === 'mask') ? recoilPulse * 0.34 : recoilPulse * 0.12;
     fencer.headGroup.rotation.set(
-      -(0.06 + ext * 0.14),
-      fencer.isP1 ? -0.64 : 0.64,
-      guardX * 0.05
+      -(0.06 + ext * 0.20) - maskSnap,
+      (fencer.isP1 ? -0.66 : 0.66) + recoilTwistY * 0.8,
+      -(fencer.isP1 ? 1 : -1) * (ext * 0.20 - maskSnap * 0.75) + guardX * 0.04
     );
 
     fencer.root.updateMatrixWorld(true);
 
-    // Compute tucked anatomical hip & deltoid shoulder sockets from transformed torso/pelvis
-    _pHipL.set(0.082, -0.04, 0.00).applyMatrix4(fencer.pelvisGroup.matrixWorld);
-    _pHipR.set(-0.082, -0.04, 0.00).applyMatrix4(fencer.pelvisGroup.matrixWorld);
+    // Anatomical acetabulum hip & lateral deltoid shoulder sockets with anti-clipping clearance
+    _pHipL.set(0.092, -0.062, 0.010).applyMatrix4(fencer.pelvisGroup.matrixWorld);
+    _pHipR.set(-0.092, -0.062, 0.010).applyMatrix4(fencer.pelvisGroup.matrixWorld);
     const leadHip = fencer.isP1 ? _pHipR : _pHipL;
     const rearHip = fencer.isP1 ? _pHipL : _pHipR;
 
-    _pShLead.set(fencer.isP1 ? -0.168 : 0.168, 0.385, 0.015).applyMatrix4(fencer.torsoGroup.matrixWorld);
-    _pShRear.set(fencer.isP1 ? 0.168 : -0.168, 0.380, -0.015).applyMatrix4(fencer.torsoGroup.matrixWorld);
+    _pShLead.set(fencer.isP1 ? -0.182 : 0.182, 0.390, 0.022).applyMatrix4(fencer.torsoGroup.matrixWorld);
+    _pShRear.set(fencer.isP1 ? 0.182 : -0.182, 0.384, -0.020).applyMatrix4(fencer.torsoGroup.matrixWorld);
 
-    // 1. Lead & Rear Foot Ground Targets + Exact 2-Bone Leg IK
-    const stepWave = Math.sin(nowSec * 5.2) * 0.025;
-    const footFloorY = 0.085 + airLift * 0.88;
+    // 1. Wide 1.50m Olympic Lunge Leg Split + Live Marche/Rompez Step Cadence & Ankle Biomechanics!
+    const liveVel = fencer.isP1 ? (state.playerVelZ || 0) : (state.aiVelZ || 0);
+    const speedNorm = Math.min(1.0, Math.abs(liveVel) / 2.2);
+    const gaitPhase = nowSec * (6.2 + speedNorm * 6.5) + (fencer.isP1 ? 0 : 1.7);
+    const stepWave = ext < 0.12 ? Math.sin(gaitPhase) * (0.016 + speedNorm * 0.036) : 0;
+    const leadStepLift = (ext < 0.12 && speedNorm > 0.08) ? Math.max(0, Math.sin(gaitPhase)) * 0.032 * speedNorm : 0;
+    const rearStepLift = (ext < 0.12 && speedNorm > 0.08) ? Math.max(0, -Math.sin(gaitPhase)) * 0.028 * speedNorm : 0;
+
+    // Mid-lunge Heel-First Toe Kick (Dorsiflexion peaks around ext=0.50, then snaps flat onto piste at ext>=0.88!)
+    const heelKickBell = (ext > 0.10 && ext < 0.90) ? Math.sin(((ext - 0.10) / 0.80) * Math.PI) : 0;
+    const leadToePitch = -heelKickBell * 0.24;
+    const leadPitchLift = Math.abs(Math.sin(leadToePitch)) * 0.052;
+
+    const footFloorY = 0.086 + airLift * 0.88;
+    let leadFootZ = lungePelvisZ + dirZ * (0.36 + ext * 0.12 + stepWave);
+    if (Math.abs(oppPelvisZ) < 50) {
+      const maxFootZ = pairMidZ - dirZ * 0.12;
+      leadFootZ = dirZ > 0 ? Math.min(leadFootZ, maxFootZ) : Math.max(leadFootZ, maxFootZ);
+    }
+    // Rear foot anchors ~0.78m behind lungePelvisZ at ext=1.0 -> locks rear thigh + calf into a straight power diagonal!
+    const rearFootZ = lungePelvisZ - dirZ * (0.36 + ext * 0.42 - stepWave * 0.6);
+    const laneOffset = fencer.isP1 ? -0.035 : 0.035;
     _pFootLead.set(
-      swordXSign * 0.06,
-      footFloorY,
-      baseZ + dirZ * (0.36 + ext * 0.66 + stepWave)
+      swordXSign * 0.06 + laneOffset,
+      footFloorY + leadStepLift + leadPitchLift,
+      leadFootZ
     );
     _pFootRear.set(
-      -swordXSign * 0.16,
-      footFloorY,
-      baseZ - dirZ * (0.34 - ext * 0.06)
+      -swordXSign * (0.15 - ext * 0.06) + laneOffset,
+      footFloorY + rearStepLift,
+      rearFootZ
     );
 
-    // Lead knee bends straight down the piste; rear knee bends perpendicular in L-stance!
-    _poleVec.set(swordXSign * 0.08, 0.25, dirZ * 1.0);
+    _poleVec.set(swordXSign * 0.08, 0.28, dirZ * 1.0);
     solveTwoBoneIK3D(leadHip, _pFootLead, fencer.lengths.thighLen, fencer.lengths.calfLen, _poleVec, _pKnee);
+    _pKnee.y = Math.max(0.22, _pKnee.y);
     _frontRef.set(0, 0, dirZ);
     orientBoneSegment(fencer.leadThigh.grp, leadHip, _pKnee, _frontRef);
     orientBoneSegment(fencer.leadCalf.grp, _pKnee, _pFootLead, _frontRef);
 
-    fencer.leadShoe.position.set(_pFootLead.x, Math.max(0, footFloorY - 0.085), _pFootLead.z);
-    fencer.leadShoe.rotation.set(0, fencer.isP1 ? 0 : Math.PI, 0);
+    fencer.leadShoe.position.set(_pFootLead.x, Math.max(0.002, footFloorY - 0.084 + leadStepLift + leadPitchLift), _pFootLead.z);
+    fencer.leadShoe.rotation.set(leadToePitch, fencer.isP1 ? 0 : Math.PI, 0);
 
-    _poleVec.set(-swordXSign * 0.95, 0.22, -dirZ * 0.22);
+    _poleVec.set(-swordXSign * 0.95, 0.25, -dirZ * 0.22);
     solveTwoBoneIK3D(rearHip, _pFootRear, fencer.lengths.thighLen, fencer.lengths.calfLen, _poleVec, _pKnee);
+    _pKnee.y = Math.max(0.22, _pKnee.y);
     _frontRef.set(-swordXSign, 0, -dirZ * 0.25).normalize();
     orientBoneSegment(fencer.rearThigh.grp, rearHip, _pKnee, _frontRef);
     orientBoneSegment(fencer.rearCalf.grp, _pKnee, _pFootRear, _frontRef);
 
-    fencer.rearShoe.position.set(_pFootRear.x, Math.max(0, footFloorY - 0.085), _pFootRear.z);
-    fencer.rearShoe.rotation.set(-ext * 0.22, fencer.isP1 ? Math.PI * 0.46 : -Math.PI * 0.46, 0);
+    // Authentic Rear-Foot Medial Edge Roll (Pronation) on Full Lunge so inner sole grips the piste cleanly!
+    const rearMedialRoll = (fencer.isP1 ? -1 : 1) * ext * 0.44;
+    const rollLift = Math.abs(Math.sin(rearMedialRoll)) * 0.048;
+    fencer.rearShoe.position.set(_pFootRear.x, Math.max(0.002, footFloorY - 0.084 + rearStepLift + rollLift), _pFootRear.z);
+    fencer.rearShoe.rotation.order = 'YXZ';
+    fencer.rearShoe.rotation.set(-ext * 0.05, fencer.isP1 ? Math.PI * 0.46 : -Math.PI * 0.46, rearMedialRoll);
 
-    // 2. Rear Counter-Balance Scorpion Arm (clamped strictly to anatomical arm reach!)
+    // 2. Rear Counter-Balance Arm: curved scorpion poise in En-Garde -> 100% straight horizontal wing on Full Lunge!
     _pHandRear.set(
-      _pShRear.x - swordXSign * (0.22 + ext * 0.15),
-      _pShRear.y + (0.18 - ext * 0.20),
-      _pShRear.z - dirZ * (0.22 + ext * 0.22)
+      _pShRear.x - swordXSign * (0.18 * (1 - ext * 0.65)),
+      _pShRear.y + (0.20 * (1 - ext) + ext * 0.05),
+      _pShRear.z - dirZ * (0.22 + ext * 0.34)
     );
     const maxArmReach = (fencer.lengths.upperArmLen + fencer.lengths.forearmLen) * 0.985;
     _vDir.subVectors(_pHandRear, _pShRear);
@@ -418,75 +490,80 @@ const ThreeArenaEngine = (() => {
     const isSlashing = (wType === WeaponId.SABRE) && (action === Action.LUNGE || slashPhase > 0);
     const slashProg = slashPhase > 0 ? (1 - slashPhase) : (action === Action.LUNGE ? Math.min(1, ext * 1.15) : 0);
 
-    // Map guardX (-1..+1 screen left..right) -> world X (-guardX * scale)
-    let handWorldX = swordXSign * 0.13 - guardX * 0.22;
-    let handWorldY = _pShLead.y - 0.14 - guardY * 0.18 + coupeLift * 0.16;
-    let handWorldZ = _pShLead.z + dirZ * (0.30 + ext * 0.26);
+    // FULL OLYMPIC ALLONGEMENT:
+    // As ext -> 1.0, the sword hand rises to shoulder height and locks out 99% straight (0.562m ahead of _pShLead)!
+    let handWorldX = swordXSign * (0.13 * (1 - ext * 0.45)) - guardX * (0.22 - ext * 0.08);
+    let handWorldY = _pShLead.y - 0.14 * (1 - ext * 0.88) - guardY * (0.16 - ext * 0.06) + coupeLift * 0.16;
+    let handWorldZ = _pShLead.z + dirZ * (0.31 + ext * 0.252);
 
     const bladeLen = wType === WeaponId.SABRE ? 0.86 : 0.89;
-    let tipWorldX = -guardX * 0.34;
-    let tipWorldY = handWorldY + 0.05 - guardY * 0.22 + coupeLift * 0.32;
+    let tipWorldX = -guardX * 0.30;
+    let tipWorldY = handWorldY + (0.05 * (1 - ext)) - guardY * 0.20 + coupeLift * 0.32;
     let tipWorldZ = handWorldZ + dirZ * bladeLen;
+
+    const maskTopY = pelvisY + 0.81;
 
     if (wType === WeaponId.SABRE) {
       if (isSlashing) {
         if (attackQuad === Quadrant.NW) {
-          // Coup à la Tête (Overhead vertical Moulinet cut)
-          handWorldX = -0.06 + slashProg * 0.04;
-          handWorldY = _pShLead.y + 0.24 - slashProg * 0.32;
+          // Coup à la Tête (Overhead Moulinet cut — stays strictly forward of own mask!)
+          handWorldX = -0.14 + slashProg * 0.06;
+          handWorldY = maskTopY + 0.05 - slashProg * 0.36;
+          handWorldZ = Math.max(0, 0) + _pShLead.z + dirZ * (0.34 + ext * 0.20);
           tipWorldX = -0.04;
-          tipWorldY = handWorldY + Math.cos(slashProg * 2.1) * bladeLen * 0.82;
-          tipWorldZ = handWorldZ + dirZ * (0.35 + Math.sin(slashProg * 1.65) * bladeLen * 0.72);
+          tipWorldY = handWorldY + Math.cos(slashProg * 1.95) * bladeLen * 0.78;
+          tipWorldZ = handWorldZ + dirZ * (0.32 + Math.sin(slashProg * 1.60) * bladeLen * 0.72);
         } else if (attackQuad === Quadrant.NE) {
-          // Coup à la Manche (Outside diagonal slash)
-          handWorldX = -0.28 + slashProg * 0.34;
+          handWorldX = -0.28 + slashProg * 0.28;
           handWorldY = _pShLead.y + 0.04 - slashProg * 0.12;
-          tipWorldX = -0.58 + slashProg * 0.88;
-          tipWorldY = handWorldY + 0.18 - slashProg * 0.32;
+          tipWorldX = -0.56 + slashProg * 0.78;
+          tipWorldY = handWorldY + 0.18 - slashProg * 0.30;
           tipWorldZ = handWorldZ + dirZ * (bladeLen * 0.86);
         } else if (attackQuad === Quadrant.SW) {
-          // Coup à la Figure (Inside cheek horizontal slash)
-          handWorldX = 0.22 - slashProg * 0.38;
-          handWorldY = _pShLead.y + 0.05 - slashProg * 0.08;
-          tipWorldX = 0.54 - slashProg * 0.88;
+          // Inside cheek cut: keep hand strictly forward of chest so forearm never cuts through ribcage!
+          handWorldX = 0.08 - slashProg * 0.28;
+          handWorldY = _pShLead.y + 0.04 - slashProg * 0.08;
+          handWorldZ = _pShLead.z + dirZ * (0.38 + ext * 0.20);
+          tipWorldX = 0.44 - slashProg * 0.78;
           tipWorldY = handWorldY + 0.16 - slashProg * 0.18;
           tipWorldZ = handWorldZ + dirZ * (bladeLen * 0.86);
         } else {
-          // Coup au Flanc (Low flank rising/diagonal cut)
-          handWorldX = -0.24 + slashProg * 0.28;
-          handWorldY = _pShLead.y - 0.20 + slashProg * 0.14;
-          tipWorldX = -0.46 + slashProg * 0.68;
-          tipWorldY = handWorldY - 0.12 + slashProg * 0.28;
+          handWorldX = -0.24 + slashProg * 0.24;
+          handWorldY = _pShLead.y - 0.18 + slashProg * 0.14;
+          tipWorldX = -0.44 + slashProg * 0.64;
+          tipWorldY = handWorldY - 0.10 + slashProg * 0.26;
           tipWorldZ = handWorldZ + dirZ * (bladeLen * 0.88);
         }
       } else if (isWindup) {
         if (attackQuad === Quadrant.NW) {
-          handWorldX = -0.10; handWorldY = _pShLead.y + 0.26;
-          tipWorldX = 0.08;   tipWorldY = handWorldY + 0.68;
-          tipWorldZ = handWorldZ - dirZ * 0.18;
+          // Overhead windup strictly above & forward of mask crown (zero backward blade through head!)
+          handWorldX = -0.18; handWorldY = maskTopY + 0.06;
+          handWorldZ = _pShLead.z + dirZ * 0.32;
+          tipWorldX = 0.06;   tipWorldY = handWorldY + 0.62;
+          tipWorldZ = handWorldZ + dirZ * 0.12;
         } else if (attackQuad === Quadrant.NE) {
           handWorldX = -0.32; handWorldY = _pShLead.y + 0.06;
-          tipWorldX = -0.64;  tipWorldY = handWorldY + 0.42;
-          tipWorldZ = handWorldZ + dirZ * 0.22;
+          tipWorldX = -0.62;  tipWorldY = handWorldY + 0.42;
+          tipWorldZ = handWorldZ + dirZ * 0.24;
         } else if (attackQuad === Quadrant.SW) {
-          handWorldX = 0.24;  handWorldY = _pShLead.y + 0.06;
-          tipWorldX = 0.56;   tipWorldY = handWorldY + 0.42;
-          tipWorldZ = handWorldZ + dirZ * 0.22;
+          handWorldX = 0.08;  handWorldY = _pShLead.y + 0.06;
+          handWorldZ = _pShLead.z + dirZ * 0.38;
+          tipWorldX = 0.46;   tipWorldY = handWorldY + 0.42;
+          tipWorldZ = handWorldZ + dirZ * 0.26;
         } else {
-          handWorldX = -0.26; handWorldY = _pShLead.y - 0.22;
-          tipWorldX = -0.52;  tipWorldY = handWorldY - 0.26;
+          handWorldX = -0.26; handWorldY = _pShLead.y - 0.18;
+          tipWorldX = -0.50;  tipWorldY = handWorldY - 0.24;
           tipWorldZ = handWorldZ + dirZ * 0.28;
         }
       } else if (guardY < -0.22 || (attackQuad === Quadrant.NW && action === Action.PARRYING)) {
-        // Authentic Quinte (5) Horizontal Overhead Roof Guard above Mask!
-        handWorldX = -0.22;
-        handWorldY = _pShLead.y + 0.30;
-        handWorldZ = _pShLead.z + dirZ * 0.22;
-        tipWorldX = 0.38;
-        tipWorldY = handWorldY + 0.04;
-        tipWorldZ = handWorldZ + dirZ * 0.12;
+        // Authentic Quinte (5) Horizontal Overhead Roof Guard strictly ABOVE & FORWARD of 1600N Mask!
+        handWorldX = -0.24;
+        handWorldY = maskTopY + 0.06;
+        handWorldZ = lungePelvisZ + dirZ * 0.34;
+        tipWorldX = 0.34;
+        tipWorldY = handWorldY + 0.03;
+        tipWorldZ = handWorldZ + dirZ * 0.14;
       } else {
-        // Classic Sabre Tierce / Quarte upright guard (blade angled upward!)
         tipWorldX = handWorldX + (guardX >= 0 ? -0.10 : 0.10);
         tipWorldY = handWorldY + 0.68;
         tipWorldZ = handWorldZ + dirZ * 0.46;
@@ -498,60 +575,159 @@ const ThreeArenaEngine = (() => {
       tipWorldZ = handWorldZ + dirZ * bladeLen;
     }
 
+    // ANATOMICAL SELF-COLLISION & OPPONENT-CHEST HAND GUARD CLAMP:
+    if (Math.abs(oppPelvisZ) < 50) {
+      // Natural elbow/shoulder recoil keeps bell guard ~0.84m from opponent's chest surface (0.89m blade -> 96% straight chord!)
+      const oppChestZ = oppPelvisZ - dirZ * 0.21;
+      const standOff = wType === WeaponId.SABRE ? 0.68 : (bladeLen - 0.045);
+      const maxHandZ = oppChestZ - dirZ * standOff;
+      handWorldZ = dirZ > 0 ? Math.min(handWorldZ, maxHandZ) : Math.max(handWorldZ, maxHandZ);
+    }
+    // FINAL INVARIANT: Keep sword hand strictly forward of own ribcage plane (+0.32m from lungePelvisZ)
+    // Applied AFTER opponent standoff so close-range counter-lunges NEVER push the sword hand behind the fencer's own shoulder!
+    if (dirZ > 0) handWorldZ = Math.max(handWorldZ, lungePelvisZ + 0.32);
+    else handWorldZ = Math.min(handWorldZ, lungePelvisZ - 0.32);
+    handWorldX = Math.min(0.10, handWorldX); // Prevent cross-body arm from slicing into own chest
+
     _pHandLead.set(handWorldX, handWorldY, handWorldZ);
     _vDir.subVectors(_pHandLead, _pShLead);
     if (_vDir.length() > maxArmReach) {
       _pHandLead.copy(_pShLead).addScaledVector(_vDir.normalize(), maxArmReach);
     }
-    // Fencing coude-bas: sword elbow points downward & slightly inward!
-    _poleVec.set(swordXSign * 0.32, -1.0, -dirZ * 0.22);
+    // Fencing coude-bas: sword elbow points downward & slightly outward (-X) so elbow never clips into ribs!
+    _poleVec.set(-0.42, -1.0, -dirZ * 0.18);
     solveTwoBoneIK3D(_pShLead, _pHandLead, fencer.lengths.upperArmLen, fencer.lengths.forearmLen, _poleVec, _pElbow);
+
+    // Push elbow outside torso cylinder if needed
+    const elbRelZ = (_pElbow.z - lungePelvisZ);
+    const elbRadSq = (_pElbow.x * _pElbow.x) / (0.23 * 0.23) + (elbRelZ * elbRelZ) / (0.18 * 0.18);
+    if (_pElbow.y > pelvisY - 0.05 && _pElbow.y < pelvisY + 0.50 && elbRadSq < 1.0) {
+      _pElbow.x = Math.min(-0.21, _pElbow.x);
+    }
+
     _vDir.subVectors(_pHandLead, _pElbow).normalize();
     _pHandLead.copy(_pElbow).addScaledVector(_vDir, fencer.lengths.forearmLen);
     _frontRef.set(0, 1, 0);
     orientBoneSegment(fencer.leadUpperArm.grp, _pShLead, _pElbow, _frontRef);
     orientBoneSegment(fencer.leadForearm.grp, _pElbow, _pHandLead, _frontRef);
 
-    // Orient Sword Gauntlet & Hilt toward the blade tip!
+    // REAL-TIME ANATOMICAL SURFACE PINNING, BLADE STOP & EULER COLUMN-BUCKLING ARCH:
+    const rawPinned = fencer.isP1 ? state.pinnedHitActive : state.p2PinnedHitActive;
+    // Only pin while the attacker is actually extended (> 0.35) so early/recovery replay frames never snap backward!
+    const isMyPinnedHit = Boolean(rawPinned && ext > 0.35);
+    let autoContactBuckle = 0;
+
+    if (isMyPinnedHit && wType !== WeaponId.SABRE && Math.abs(oppPelvisZ) < 50) {
+      // Always anchor Z to the opponent's live front chest surface (oppPelvisZ - dirZ * 0.21)
+      // and NEVER use `||` on Z (since z=0.0 at centerline is falsy in JS!)
+      const pinX = fencer.isP1 ? state.pinnedWorldX : state.p2PinnedWorldX;
+      const pinY = fencer.isP1 ? state.pinnedWorldY : state.p2PinnedWorldY;
+      const oppSurfaceZ = oppPelvisZ - dirZ * 0.21;
+      const rawPinZ = fencer.isP1 ? state.pinnedWorldZ : state.p2PinnedWorldZ;
+      const candidateZ = (typeof rawPinZ === 'number' && Math.abs(rawPinZ - oppSurfaceZ) < 0.35) ? rawPinZ : oppSurfaceZ;
+      const pinZ = fencer.isP1
+        ? Math.min(candidateZ, oppSurfaceZ)
+        : Math.max(candidateZ, oppSurfaceZ);
+
+      // Verify pinZ is strictly in front of our sword hand along dirZ; if very close, project tip forward along dirZ!
+      tipWorldX = pinX;
+      tipWorldY = Math.max(0.08, pinY);
+      tipWorldZ = dirZ > 0
+        ? Math.max(pinZ, _pHandLead.z + 0.62)
+        : Math.min(pinZ, _pHandLead.z - 0.62);
+      const chord = Math.hypot(tipWorldX - _pHandLead.x, tipWorldY - _pHandLead.y, tipWorldZ - _pHandLead.z);
+      const shorten = Math.max(0.008, bladeLen - chord);
+      autoContactBuckle = Math.min(0.042, 0.024 + shorten * 0.22);
+    } else if (Math.abs(oppPelvisZ) < 50) {
+      // Continuous live surface stop against opponent's chest/mask/arm cylinder so blade NEVER pierces through body!
+      const oppChestSurfaceZ = oppPelvisZ - dirZ * 0.21;
+      const pastSurface = dirZ * (tipWorldZ - oppChestSurfaceZ);
+      const hitsSilhouette = (Math.abs(tipWorldX) < 0.34 && tipWorldY > 0.36 && tipWorldY < 1.72);
+      if (pastSurface > 0 && hitsSilhouette) {
+        tipWorldZ = oppChestSurfaceZ;
+        if (wType !== WeaponId.SABRE) {
+          const chord = Math.hypot(tipWorldX - _pHandLead.x, tipWorldY - _pHandLead.y, tipWorldZ - _pHandLead.z);
+          const shorten = Math.max(0, bladeLen - chord);
+          autoContactBuckle = Math.min(0.038, 0.018 + shorten * 0.20);
+        }
+      }
+    }
+    // Never let blade tip dip below copper piste floor (y >= 0.018m)
+    tipWorldY = Math.max(0.018, tipWorldY);
+
+    // NON-PENETRATING 3D BLADE-ON-BLADE CONTACT & PARRY DEFLECTION CONSTRAINT:
+    if (state.parryClashTimer > 0 && ((fencer.isP1 && action === Action.RECOVERY) || (!fencer.isP1 && (action === Action.PARRIED || action === Action.RECOVERY)))) {
+      // Attacker's parried blade deflects cleanly outside the 3D clash point instead of ghosting through the defender's guard!
+      const deflectOutX = (guardX >= 0 ? -1 : 1) * 0.18 * (state.parryClashTimer / 0.26);
+      tipWorldX += deflectOutX;
+      tipWorldY += 0.09 * (state.parryClashTimer / 0.26);
+    }
+
+    // HARD FORWARD-BLADE INVARIANT: Ensure blade tip is ALWAYS strictly in front of the sword hand along dirZ
+    // (Prevents any fencer's sword from ever reversing and stabbing into their own body in live play or replay!)
+    const minForwardBladeSpan = wType === WeaponId.SABRE ? 0.10 : 0.45;
+    if (dirZ > 0) {
+      tipWorldZ = Math.max(tipWorldZ, _pHandLead.z + minForwardBladeSpan);
+    } else {
+      tipWorldZ = Math.min(tipWorldZ, _pHandLead.z - minForwardBladeSpan);
+    }
+
+    // Update Deformable 3D Steel Blade Curve & Orient Hilt Tangent to the Blade Root!
     fencer.swordHandGroup.position.copy(_pHandLead);
     _pBladeTip.set(tipWorldX, tipWorldY, tipWorldZ);
-    fencer.swordHandGroup.lookAt(_pBladeTip);
 
-    // Update Deformable 3D Steel Blade Bezier Curve (with 22Hz Steel Vibration + Buckling Arch!)
     const vibX = fencer.isP1 ? state.bladeVibX : state.p2BladeVibX;
     const vibY = fencer.isP1 ? state.bladeVibY : state.p2BladeVibY;
-    const buckle = fencer.isP1 ? state.bladeBuckleAmp : state.p2BladeBuckleAmp;
+    const buckle = Math.max(fencer.isP1 ? state.bladeBuckleAmp : state.p2BladeBuckleAmp, autoContactBuckle);
 
-    if (!fencer.isP1 && state.p2PinnedHitActive && wType !== WeaponId.SABRE) {
-      _pBladeTip.z = Math.max(_pBladeTip.z, state.playerZ + 0.16);
+    if (!isMyPinnedHit) {
+      _pBladeTip.x -= vibX * 0.075;
+      _pBladeTip.y = Math.max(0.018, _pBladeTip.y - vibY * 0.075);
     }
-    _pBladeTip.x -= vibX * 0.085;
-    _pBladeTip.y -= vibY * 0.085;
 
+    // Step _pBladeStart 4.5cm along the exact Hilt -> Tip axis (never along camera forward!)
     _pBladeStart.copy(_pHandLead).addScaledVector(
       _vDir.subVectors(_pBladeTip, _pHandLead).normalize(),
       0.045
     );
     _pBladeMid.lerpVectors(_pBladeStart, _pBladeTip, 0.5);
-    _pBladeMid.x += vibX * 0.055;
-    _pBladeMid.y += vibY * 0.055;
-    if (wType === WeaponId.SABRE) {
-      _pBladeMid.y += 0.022;
-    } else if (buckle > 0.01) {
-      _pBladeMid.y += buckle;
-      _pBladeMid.x += (guardX >= 0 ? -0.04 : 0.04);
-    } else if (state.bladeBindActive) {
-      const bindArc = fencer.isP1
-        ? (-state.bindPushVectorX * 0.06 / Math.max(0.5, state.bindLeverage))
-        : (state.bindPushVectorX * 0.06 * Math.min(2.0, state.bindLeverage));
-      _pBladeMid.x += bindArc;
-    } else if (ext > 0.72 && inRange) {
-      _pBladeMid.y += 0.055;
+    // Keep midpoint vibration IN PHASE with tip vibration (same sign, zero S-wave inversion!)
+    if (!isMyPinnedHit) {
+      _pBladeMid.x -= vibX * 0.038;
+      _pBladeMid.y -= vibY * 0.038;
     }
+
+    if (wType === WeaponId.SABRE && buckle <= 0.005) {
+      _pBladeMid.y -= 0.014;
+    }
+    if (buckle > 0.005 && wType !== WeaponId.SABRE) {
+      // AUTHENTIC FENCING BLADE FLEX DIRECTION (Soie / Supinated Wrist):
+      // In real Foil & Épée, the blade is set slightly downward and strikes from shoulder height into the chest,
+      // so the blade belly bows DOWNWARD (-Y, tip dipping into target) and OUTWARD along the guard line!
+      const clampedBuckle = Math.min(0.042, buckle);
+      _pBladeMid.y -= clampedBuckle;
+      _pBladeMid.x += (guardX >= 0 ? -0.016 : 0.016) * (clampedBuckle / 0.035);
+    } else if (state.bladeBindActive && Math.abs(state.bindContactWorldZ) < 12) {
+      // Subtle steel-on-steel contact flex (capped at 3.0cm so blades stay taut & straight during binds!)
+      const sepSign = fencer.isP1 ? -1 : 1;
+      const myCompliance = fencer.isP1
+        ? (0.28 / Math.max(0.55, state.bindLeverage))
+        : (0.36 * Math.min(1.8, state.bindLeverage));
+      const bindShiftX = Math.max(-0.030, Math.min(0.030, (state.bindContactWorldX + sepSign * 0.008 - _pBladeMid.x) * 0.45 - state.bindPushVectorX * 0.024 * sepSign * myCompliance));
+      const bindShiftY = Math.max(-0.024, Math.min(0.024, (state.bindContactWorldY - _pBladeMid.y) * 0.35 - state.bindPushVectorY * 0.020 * myCompliance));
+      _pBladeMid.x += bindShiftX;
+      _pBladeMid.y += bindShiftY;
+    } else if (ext > 0.72 && inRange && wType !== WeaponId.SABRE) {
+      _pBladeMid.y -= 0.015;
+    }
+
+    // Orient Sword Gauntlet & Hilt slightly toward the flexed midpoint so hilt & blade root have zero reverse angle!
+    fencer.swordHandGroup.lookAt(_pBladeTip);
     Fencing3DAssets.updateDeformableBlade(fencer.blades[wType], _pBladeStart, _pBladeMid, _pBladeTip);
 
     // 3D Threat Point Halo on Opponent's Blade Tip during Feint (Gold) vs Real Attack (Crimson)
-    if (!fencer.isP1 && isAttacking && wType !== WeaponId.SABRE) {
+    const isShowcaseMenu = state.paused && DOM.modalOverlay && !DOM.modalOverlay.classList.contains('hidden');
+    if (!fencer.isP1 && !isShowcaseMenu && !state.replayActive && isAttacking && wType !== WeaponId.SABRE) {
       const isDeception = (action === Action.FEINT1 || action === Action.FEINT2 || action === Action.COUPE);
       fencer.tipThreatGlow.visible = true;
       fencer.tipThreatGlow.position.copy(_pBladeTip);
@@ -563,13 +739,13 @@ const ThreeArenaEngine = (() => {
       fencer.tipThreatGlow.visible = false;
     }
 
-    // Update Trailing Catenary Floor Body Cord
+    // Update Trailing Catenary Floor Body Cord anchored to rear waist clip (Mousqueton)
     updateCatenaryCord(
       fencer.isP1 ? arena.cordP1 : arena.cordP2,
-      rearHip.x,
-      rearHip.y,
-      rearHip.z,
-      fencer.isP1 ? -7.15 : 7.15
+      rearHip.x * 0.65,
+      pelvisY + 0.09,
+      lungePelvisZ - dirZ * 0.11,
+      fencer.isP1 ? -7.02 : 7.02
     );
   }
 
@@ -662,25 +838,60 @@ const ThreeArenaEngine = (() => {
 
     _fpTipPos.addScaledVector(_fpRight, myVibX * 0.09).addScaledVector(_fpUp, -myVibY * 0.09);
 
-    let archUp = -myVibY * 0.055;
-    let archSide = myVibX * 0.055;
-    if (!isP2Pov && state.pinnedHitActive && wType !== WeaponId.SABRE) {
-      const oppChestZ = state.aiZ - state.aiExtension * 0.5 - 0.14;
-      _fpTipPos.set(-state.pinnedWorldX * 0.7, 1.12 + state.pinnedWorldY * 0.55, oppChestZ);
-      archUp += Math.max(0.13, myBuckle * 1.15);
-      archSide += myGuardX >= 0 ? 0.085 : -0.085;
-    } else if (state.bladeBindActive && wType !== WeaponId.SABRE) {
-      const compliance = isP2Pov ? Math.min(1.9, state.bindLeverage) : (1 / Math.max(0.5, state.bindLeverage));
-      archUp += -state.bindPushVectorY * 0.085 * compliance;
-      archSide += state.bindPushVectorX * 0.085 * compliance;
+    // Hard-clamp 1st-person blade tip against opponent's front conductive chest surface so 1P sword NEVER pierces through Rival!
+    const oppWorldPelvisZ = isP2Pov
+      ? (state.playerZ + state.playerExtension * 0.48)
+      : (state.aiZ - state.aiExtension * 0.48);
+    const oppFrontSurfaceZ = isP2Pov ? (oppWorldPelvisZ + 0.21) : (oppWorldPelvisZ - 0.21);
+    let fpAutoBuckle = 0;
+    const fpDirZ = isP2Pov ? -1 : 1;
+    if (fpDirZ * (_fpTipPos.z - oppFrontSurfaceZ) > 0 && Math.abs(_fpTipPos.x) < 0.34 && _fpTipPos.y > 0.38 && _fpTipPos.y < 1.70) {
+      const overZ = fpDirZ * (_fpTipPos.z - oppFrontSurfaceZ);
+      _fpTipPos.z = oppFrontSurfaceZ;
+      // Natural 1st-person elbow absorption so hilt retracts smoothly instead of folding the blade!
+      _fpHiltPos.z -= fpDirZ * Math.min(0.28, overZ * 0.72);
+      if (wType !== WeaponId.SABRE) {
+        fpAutoBuckle = Math.min(0.042, 0.018 + overZ * 0.08);
+      }
+    }
+    _fpTipPos.y = Math.max(0.02, _fpTipPos.y);
+
+    // AUTHENTIC 1ST-PERSON BLADE FLEX DIRECTION:
+    // Downward/supinated flex (archUp < 0 bows the blade belly downward so the tip dips into the target;
+    // archSide bows outward toward the guard side instead of hooking inward!)
+    let archUp = -myVibY * 0.040 - fpAutoBuckle;
+    let archSide = myVibX * 0.040 + (fpAutoBuckle > 0.008 ? (myGuardX >= 0 ? 0.016 : -0.016) : 0);
+    const fpPinned = isP2Pov ? state.p2PinnedHitActive : state.pinnedHitActive;
+    if (fpPinned && wType !== WeaponId.SABRE) {
+      const px = isP2Pov ? state.p2PinnedWorldX : state.pinnedWorldX;
+      const py = isP2Pov ? state.p2PinnedWorldY : state.pinnedWorldY;
+      const rawFpZ = isP2Pov ? state.p2PinnedWorldZ : state.pinnedWorldZ;
+      const validFpZ = (typeof rawFpZ === 'number' && Math.abs(rawFpZ - oppFrontSurfaceZ) < 0.35) ? rawFpZ : oppFrontSurfaceZ;
+      const pz = isP2Pov
+        ? Math.max(validFpZ, oppFrontSurfaceZ)
+        : Math.min(validFpZ, oppFrontSurfaceZ);
+      _fpTipPos.set(px, Math.max(0.10, py), pz);
+      // Keep 1st-person hilt ~0.82m behind pinned tip so the blade shows a sleek 3.2cm downward/outward flex!
+      const desiredHiltZ = pz - fpDirZ * 0.82;
+      if (fpDirZ * (_fpHiltPos.z - desiredHiltZ) > 0) {
+        _fpHiltPos.z = desiredHiltZ;
+      }
+      archUp = -Math.min(0.040, Math.max(0.024, myBuckle));
+      archSide = (myGuardX >= 0 ? 0.016 : -0.016);
+    } else if (state.bladeBindActive) {
+      const compliance = isP2Pov ? Math.min(1.6, state.bindLeverage) : (1 / Math.max(0.6, state.bindLeverage));
+      archUp += Math.max(-0.030, Math.min(0.030, -state.bindPushVectorY * 0.032 * compliance));
+      archSide += Math.max(-0.032, Math.min(0.032, state.bindPushVectorX * 0.035 * compliance));
     }
 
     fpRig.rig.position.copy(_fpHiltPos);
     fpRig.rig.lookAt(_fpTipPos);
 
-    _pBladeStart.copy(_fpHiltPos).addScaledVector(_fpFwd, 0.04);
-    _fpMidPos.lerpVectors(_pBladeStart, _fpTipPos, 0.52)
-      .addScaledVector(_fpUp, archUp + (wType === WeaponId.SABRE ? 0.025 : 0))
+    // Advance _pBladeStart strictly along the Hilt -> Tip unit vector (NEVER along _fpFwd camera axis, which caused a reverse S-bend at the guard!)
+    _vDir.subVectors(_fpTipPos, _fpHiltPos).normalize();
+    _pBladeStart.copy(_fpHiltPos).addScaledVector(_vDir, 0.042);
+    _fpMidPos.lerpVectors(_pBladeStart, _fpTipPos, 0.50)
+      .addScaledVector(_fpUp, archUp - (wType === WeaponId.SABRE ? 0.012 : 0))
       .addScaledVector(_fpRight, archSide);
 
     Fencing3DAssets.updateDeformableBlade(fpRig.blades[wType], _pBladeStart, _fpMidPos, _fpTipPos);
@@ -704,6 +915,10 @@ const ThreeArenaEngine = (() => {
     arena.lampP2Mat.color.setHex(p2Red ? 0xf43f5e : 0x0f172a);
     arena.lampW1Mat.color.setHex(w1 ? 0xf8fafc : 0x0f172a);
     arena.lampW2Mat.color.setHex(w2 ? 0xf8fafc : 0x0f172a);
+    if (arena.podiumLedP1Mat && arena.podiumLedP2Mat) {
+      arena.podiumLedP1Mat.color.setHex(p1Green ? 0x10b981 : (w1 ? 0xf8fafc : 0x0284c7));
+      arena.podiumLedP2Mat.color.setHex(p2Red ? 0xf43f5e : (w2 ? 0xf8fafc : 0x0284c7));
+    }
 
     if (p1Green || p2Red || w1 || w2) {
       scoreBounceLight.intensity = 2.2;
@@ -712,27 +927,52 @@ const ThreeArenaEngine = (() => {
       scoreBounceLight.intensity *= 0.88;
     }
 
-    // Real-Time 3D Blade-Contact Point Light & Glowing Intersection Spark Node
+    // Real-Time 3D Blade-Contact / Body-Impact Point Light & Glowing Contact Ring
     if (clashPointLight && clashContactOrb) {
-      if (state.clashLightIntensity > 0.05) {
+      const { coreSphere, flareRing } = clashContactOrb.userData || {};
+      if (state.pinnedHitActive || state.p2PinnedHitActive) {
+        const isP1Hit = state.pinnedHitActive;
+        const hx = isP1Hit ? state.pinnedWorldX : state.p2PinnedWorldX;
+        const hy = isP1Hit ? state.pinnedWorldY : state.p2PinnedWorldY;
+        const hz = isP1Hit ? state.pinnedWorldZ : state.p2PinnedWorldZ;
+        const isOff = isP1Hit ? state.pinnedIsOffTarget : state.p2PinnedIsOffTarget;
+        const hitHex = isOff ? 0xf8fafc : (isP1Hit ? 0x10b981 : 0xf43f5e);
+        clashPointLight.intensity = 2.1;
+        clashPointLight.color.setHex(hitHex);
+        clashPointLight.position.set(hx, hy, hz);
+        clashContactOrb.visible = true;
+        clashContactOrb.position.set(hx, hy, hz);
+        if (coreSphere && flareRing) {
+          coreSphere.material.color.setHex(0xffffff);
+          flareRing.material.color.setHex(hitHex);
+          const pulse = 0.95 + 0.25 * Math.sin(nowSec * 28);
+          clashContactOrb.scale.set(pulse, pulse, pulse);
+        }
+      } else if (state.clashLightIntensity > 0.05) {
         clashPointLight.intensity = state.clashLightIntensity;
         clashPointLight.color.setHex(state.clashLightColorHex || 0xfde047);
         clashPointLight.position.set(state.clashLightWorldX, state.clashLightWorldY, state.clashLightWorldZ);
         clashContactOrb.visible = true;
         clashContactOrb.position.copy(clashPointLight.position);
-        clashContactOrb.material.color.setHex(0xfef08a);
-        clashContactOrb.material.opacity = Math.min(0.95, state.clashLightIntensity * 0.42);
-        const s = 0.8 + state.clashLightIntensity * 0.35;
+        if (coreSphere && flareRing) {
+          coreSphere.material.color.setHex(0xfef08a);
+          flareRing.material.color.setHex(state.clashLightColorHex || 0xfde047);
+        }
+        const s = 0.85 + state.clashLightIntensity * 0.32;
         clashContactOrb.scale.set(s, s, s);
       } else if (state.bladeBindActive) {
-        clashPointLight.intensity = 0.95 + state.bindPressure * 1.1;
-        clashPointLight.color.setHex(state.bindLeverage >= 1.15 ? 0x38bdf8 : 0xfde047);
+        const bindHex = state.bindLeverage >= 1.15 ? 0x38bdf8 : 0xfde047;
+        clashPointLight.intensity = 1.05 + state.bindPressure * 1.15;
+        clashPointLight.color.setHex(bindHex);
         clashPointLight.position.set(state.bindContactWorldX, state.bindContactWorldY, state.bindContactWorldZ);
         clashContactOrb.visible = true;
         clashContactOrb.position.copy(clashPointLight.position);
-        clashContactOrb.material.color.setHex(state.bindLeverage >= 1.15 ? 0x38bdf8 : 0xfde047);
-        clashContactOrb.material.opacity = 0.65;
-        clashContactOrb.scale.set(1, 1, 1);
+        if (coreSphere && flareRing) {
+          coreSphere.material.color.setHex(0xfef08a);
+          flareRing.material.color.setHex(bindHex);
+        }
+        const s = 0.78 + state.bindPressure * 0.35;
+        clashContactOrb.scale.set(s, s, s);
       } else {
         clashPointLight.intensity = 0;
         clashContactOrb.visible = false;
@@ -756,6 +996,11 @@ const ThreeArenaEngine = (() => {
     for (let i = 0; i < arena.spotCones.length; i++) {
       arena.spotCones[i].material.color.setHex(isMatchPt ? (i === 1 ? 0xfbbf24 : 0xf43f5e) : 0xbae6fd);
       arena.spotCones[i].material.opacity = isMatchPt ? (0.055 + 0.025 * Math.sin(nowSec * 6)) : 0.038;
+    }
+    if (arena.bokehPoints) {
+      const flashActive = (state.roundPhase === RoundPhase.HALT && (p1Green || p2Red));
+      arena.bokehPoints.material.size = flashActive ? (0.18 + 0.06 * Math.abs(Math.sin(nowSec * 28))) : 0.14;
+      arena.bokehPoints.material.opacity = flashActive ? 0.82 : 0.52;
     }
   }
 
@@ -792,6 +1037,103 @@ const ThreeArenaEngine = (() => {
 
     syncArenaTelemetry3D(nowSec);
 
+    // 3D OLYMPIC SIDE-RAIL SLOW-MOTION BROADCAST REPLAY (Overrides 1P/2P camera during Ralenti!)
+    if (state.replayActive && state.replayFrames.length >= 2 && !isMenuOpen) {
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, w, h);
+      camP1.aspect = w / Math.max(1, h);
+      camP1.fov = 42;
+      camP1.updateProjectionMatrix();
+
+      const idx0 = Math.min(state.replayFrames.length - 1, Math.max(0, Math.floor(state.replayCursor)));
+      const idx1 = Math.min(state.replayFrames.length - 1, idx0 + 1);
+      const alpha = state.replayCursor - idx0;
+      const f0 = state.replayFrames[idx0];
+      const f1 = state.replayFrames[idx1];
+      const lerp = (a, b) => a + (b - a) * alpha;
+
+      const midZ = lerp(f0.p1Z + f0.p2Z, f1.p1Z + f1.p2Z) * 0.5;
+      const sweepAz = state.replayCameraAngle + (alpha + idx0 * 0.01) * 0.16;
+      camP1.position.set(
+        3.68 * Math.cos(sweepAz),
+        1.24,
+        midZ + Math.sin(sweepAz) * 1.05
+      );
+      camP1.lookAt(0.0, 1.02, midZ);
+
+      // Temporarily apply recorded blade buckle, vibration, 3D surface pin & body recoil during replay!
+      const savedB1 = state.bladeBuckleAmp, savedB2 = state.p2BladeBuckleAmp;
+      const savedVx1 = state.bladeVibX, savedVy1 = state.bladeVibY;
+      const savedVx2 = state.p2BladeVibX, savedVy2 = state.p2BladeVibY;
+      const savedPin1 = state.pinnedHitActive, savedPin2 = state.p2PinnedHitActive;
+      const savedPX1 = state.pinnedWorldX, savedPY1 = state.pinnedWorldY, savedPZ1 = state.pinnedWorldZ;
+      const savedPX2 = state.p2PinnedWorldX, savedPY2 = state.p2PinnedWorldY, savedPZ2 = state.p2PinnedWorldZ;
+      const savedRec1 = state.p1HitRecoil, savedRec2 = state.p2HitRecoil;
+
+      const repP1Ext = lerp(f0.p1Ext, f1.p1Ext);
+      const repP2Ext = lerp(f0.p2Ext, f1.p2Ext);
+      const repP1PelvisZ = lerp(f0.p1Z, f1.p1Z) + repP1Ext * 0.50;
+      const repP2PelvisZ = lerp(f0.p2Z, f1.p2Z) - repP2Ext * 0.50;
+
+      state.bladeBuckleAmp = lerp(f0.p1Buckle, f1.p1Buckle);
+      state.p2BladeBuckleAmp = lerp(f0.p2Buckle, f1.p2Buckle);
+      state.bladeVibX = lerp(f0.p1VibX, f1.p1VibX);
+      state.bladeVibY = lerp(f0.p1VibY, f1.p1VibY);
+      state.p2BladeVibX = lerp(f0.p2VibX, f1.p2VibX);
+      state.p2BladeVibY = lerp(f0.p2VibY, f1.p2VibY);
+
+      state.pinnedHitActive = Boolean((f0.p1Pin || f1.p1Pin) && repP1Ext > 0.45);
+      if (state.pinnedHitActive) {
+        state.pinnedWorldX = f1.p1PinX !== undefined ? f1.p1PinX : (f0.p1PinX || 0);
+        state.pinnedWorldY = f1.p1PinY !== undefined ? f1.p1PinY : (f0.p1PinY || 1.12);
+        // Pin directly onto P2's live front chest plane at this replay frame!
+        state.pinnedWorldZ = repP2PelvisZ - 0.21;
+      }
+      state.p2PinnedHitActive = Boolean((f0.p2Pin || f1.p2Pin) && repP2Ext > 0.45);
+      if (state.p2PinnedHitActive) {
+        state.p2PinnedWorldX = f1.p2PinX !== undefined ? f1.p2PinX : (f0.p2PinX || 0);
+        state.p2PinnedWorldY = f1.p2PinY !== undefined ? f1.p2PinY : (f0.p2PinY || 1.12);
+        // Pin directly onto P1's live front chest plane at this replay frame (NEVER positive +Z behind P2!)
+        state.p2PinnedWorldZ = repP1PelvisZ + 0.21;
+      }
+      state.p1HitRecoil = lerp(f0.p1Rec || 0, f1.p1Rec || 0);
+      state.p1HitRecoilX = f1.p1RecX || f0.p1RecX || 0;
+      state.p1HitRecoilY = f1.p1RecY || f0.p1RecY || 0;
+      state.p2HitRecoil = lerp(f0.p2Rec || 0, f1.p2Rec || 0);
+      state.p2HitRecoilX = f1.p2RecX || f0.p2RecX || 0;
+      state.p2HitRecoilY = f1.p2RecY || f0.p2RecY || 0;
+
+      fencerP1.root.visible = true;
+      fencerP2.root.visible = true;
+      poseFencer3D(fencerP1, {
+        baseZ: lerp(f0.p1Z, f1.p1Z), jumpY: lerp(f0.p1Y, f1.p1Y), posture: f0.p1Posture,
+        ext: repP1Ext, guardX: lerp(f0.p1GX, f1.p1GX), guardY: lerp(f0.p1GY, f1.p1GY),
+        action: f0.p1Act, attackQuad: f0.p1Quad, coupeLift: 0,
+        slashPhase: lerp(f0.p1Slash, f1.p1Slash), wType, inRange: true, rivalProfile: null,
+        oppPelvisZ: repP2PelvisZ
+      }, nowSec);
+      poseFencer3D(fencerP2, {
+        baseZ: lerp(f0.p2Z, f1.p2Z), jumpY: lerp(f0.p2Y, f1.p2Y), posture: f0.p2Posture,
+        ext: repP2Ext, guardX: lerp(f0.p2GX, f1.p2GX), guardY: lerp(f0.p2GY, f1.p2GY),
+        action: f0.p2Act, attackQuad: f0.p2Quad, coupeLift: lerp(f0.p2Coupe, f1.p2Coupe),
+        slashPhase: lerp(f0.p2Slash, f1.p2Slash), wType, inRange: true, rivalProfile,
+        oppPelvisZ: repP1PelvisZ
+      }, nowSec);
+
+      state.bladeBuckleAmp = savedB1; state.p2BladeBuckleAmp = savedB2;
+      state.bladeVibX = savedVx1; state.bladeVibY = savedVy1;
+      state.p2BladeVibX = savedVx2; state.p2BladeVibY = savedVy2;
+      state.pinnedHitActive = savedPin1; state.p2PinnedHitActive = savedPin2;
+      state.pinnedWorldX = savedPX1; state.pinnedWorldY = savedPY1; state.pinnedWorldZ = savedPZ1;
+      state.p2PinnedWorldX = savedPX2; state.p2PinnedWorldY = savedPY2; state.p2PinnedWorldZ = savedPZ2;
+      state.p1HitRecoil = savedRec1; state.p2HitRecoil = savedRec2;
+
+      updateFirstPersonWeaponRig3D(fpRigP1, camP1, false, false);
+      updateFirstPersonWeaponRig3D(fpRigP2, camP2, true, false);
+      renderer.render(scene, camP1);
+      return true;
+    }
+
     if (state.gameMode === GameMode.SPLIT_2P && !isMenuOpen) {
       // 2P Split-Screen Scissor Rendering: Both 3D Fencers + Both First-Person Rigs!
       renderer.setScissorTest(true);
@@ -807,7 +1149,7 @@ const ThreeArenaEngine = (() => {
       camP1.position.set(
         shake1X - state.guardX * 0.05,
         1.42 + state.playerY * 0.52 + Math.sin(state.camBobPhase) * 0.016 + shake1Y,
-        state.playerZ - 0.34
+        state.playerZ - 0.28 + state.playerExtension * 0.44
       );
       camP1.lookAt(-state.guardX * 0.08, 1.24 + state.aiY * 0.35 - state.camPitchOffset * 0.004, state.aiZ);
       camP1.rotation.z += state.camRollOffset;
@@ -818,13 +1160,13 @@ const ThreeArenaEngine = (() => {
         baseZ: state.playerZ, jumpY: state.playerY, posture: state.playerPosture,
         ext: state.playerExtension, guardX: state.guardX, guardY: state.guardY,
         action: state.playerAction, attackQuad: state.quadrant, coupeLift: 0,
-        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null
+        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null, oppPelvisZ: state.aiZ - state.aiExtension * 0.48
       }, nowSec);
       poseFencer3D(fencerP2, {
         baseZ: state.aiZ, jumpY: state.aiY, posture: state.aiPosture,
         ext: state.aiExtension, guardX: state.aiGuardX, guardY: state.aiGuardY,
         action: state.aiAction, attackQuad: state.aiAttackQuad, coupeLift: 0,
-        slashPhase: state.p2SabreSlashPhase, wType, inRange, rivalProfile
+        slashPhase: state.p2SabreSlashPhase, wType, inRange, rivalProfile, oppPelvisZ: state.playerZ + state.playerExtension * 0.48
       }, nowSec);
       updateFirstPersonWeaponRig3D(fpRigP1, camP1, false, true);
       updateFirstPersonWeaponRig3D(fpRigP2, camP2, true, false);
@@ -843,7 +1185,7 @@ const ThreeArenaEngine = (() => {
       camP2.position.set(
         shake2X + state.aiGuardX * 0.05,
         1.42 + state.aiY * 0.52 + Math.sin(state.p2CamBobPhase) * 0.016 + shake2Y,
-        state.aiZ + 0.34
+        state.aiZ + 0.28 - state.aiExtension * 0.44
       );
       camP2.lookAt(state.aiGuardX * 0.08, 1.24 + state.playerY * 0.35 - state.p2CamPitchOffset * 0.004, state.playerZ);
       camP2.rotation.z += state.p2CamRollOffset;
@@ -854,13 +1196,13 @@ const ThreeArenaEngine = (() => {
         baseZ: state.playerZ, jumpY: state.playerY, posture: state.playerPosture,
         ext: state.playerExtension, guardX: state.guardX, guardY: state.guardY,
         action: state.playerAction, attackQuad: state.quadrant, coupeLift: 0,
-        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null
+        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null, oppPelvisZ: state.aiZ - state.aiExtension * 0.48
       }, nowSec);
       poseFencer3D(fencerP2, {
         baseZ: state.aiZ, jumpY: state.aiY, posture: state.aiPosture,
         ext: state.aiExtension, guardX: state.aiGuardX, guardY: state.aiGuardY,
         action: state.aiAction, attackQuad: state.aiAttackQuad, coupeLift: 0,
-        slashPhase: state.p2SabreSlashPhase, wType, inRange, rivalProfile
+        slashPhase: state.p2SabreSlashPhase, wType, inRange, rivalProfile, oppPelvisZ: state.playerZ + state.playerExtension * 0.48
       }, nowSec);
       updateFirstPersonWeaponRig3D(fpRigP1, camP1, false, false);
       updateFirstPersonWeaponRig3D(fpRigP2, camP2, true, true);
@@ -880,33 +1222,42 @@ const ThreeArenaEngine = (() => {
     if (isMenuOpen && state.showcaseCamMode !== 'pov') {
       const pulseZoom = state.showcaseWeaponPulse * 4.5;
       if (state.showcaseCamMode === 'duel') {
-        // CAM 02: Wide Grand Palais Championship Duel Orbit showing BOTH sculpted 3D Fencers from open-chest +X broadcast side!
-        camP1.fov = 46 - pulseZoom;
+        // CAM 02: Wide Grand Palais Championship Duel Orbit at True Long Olympic Measure (-1.35m vs +1.35m = 2.70m)!
+        camP1.fov = 47 - pulseZoom;
         camP1.updateProjectionMatrix();
-        const orbitAz = Math.sin(nowSec * 0.42) * 0.24 + state.mouseX * 0.32;
+        const orbitAz = Math.sin(nowSec * 0.42) * 0.20 + state.mouseX * 0.28;
         camP1.position.set(
-          3.35 + Math.cos(orbitAz) * 0.22,
-          1.36 + state.mouseY * -0.20,
-          0.05 + Math.sin(orbitAz) * 0.60
+          3.85 + Math.cos(orbitAz) * 0.22,
+          1.34 + state.mouseY * -0.18,
+          0.05 + Math.sin(orbitAz) * 0.55
         );
-        camP1.lookAt(0.0, 0.94, w > 900 ? 0.36 : 0.0);
+        camP1.lookAt(0.0, 0.90, w > 900 ? 0.34 : 0.0);
 
         fencerP1.root.visible = true;
         fencerP2.root.visible = true;
-        const p1CounterExt = (!showcaseStrike && !showcaseWindup) ? Math.max(0, Math.sin(nowSec * 3.2)) * 0.45 : 0;
+        const p1CounterExt = (!showcaseStrike && !showcaseWindup) ? Math.max(0, Math.sin(nowSec * 3.0)) * 0.94 : 0.14;
+        const p1ShowcasePelvisZ = -1.16 + p1CounterExt * 0.50;
+        const p2ShowcasePelvisZ = 1.16 - showcaseExt * 0.50;
+        const savedP2Rec = state.p2HitRecoil, savedP1Rec = state.p1HitRecoil;
+        state.p1HitRecoil = showcaseExt > 0.72 ? (showcaseExt - 0.72) * 2.8 : 0;
+        state.p2HitRecoil = p1CounterExt > 0.72 ? (p1CounterExt - 0.72) * 2.8 : 0;
         poseFencer3D(fencerP1, {
-          baseZ: -1.15, jumpY: 0, posture: Posture.STAND,
+          baseZ: -1.16, jumpY: 0, posture: Posture.STAND,
           ext: p1CounterExt, guardX: state.mouseX * 0.5, guardY: state.mouseY * 0.5,
           action: p1CounterExt > 0.3 ? Action.LUNGE : Action.IDLE,
           attackQuad: state.quadrant, coupeLift: 0,
-          slashPhase: 0, wType, inRange: true, rivalProfile: null
+          slashPhase: 0, wType, inRange: true, rivalProfile: null,
+          oppPelvisZ: p2ShowcasePelvisZ
         }, nowSec);
         poseFencer3D(fencerP2, {
-          baseZ: 1.15, jumpY: 0, posture: Posture.STAND,
+          baseZ: 1.16, jumpY: 0, posture: Posture.STAND,
           ext: showcaseExt, guardX: state.aiGuardX, guardY: state.aiGuardY,
           action: showcaseAction, attackQuad: showcaseQuad, coupeLift: 0,
-          slashPhase: showcaseSlash, wType, inRange: true, rivalProfile
+          slashPhase: showcaseSlash, wType, inRange: true, rivalProfile,
+          oppPelvisZ: p1ShowcasePelvisZ
         }, nowSec);
+        state.p1HitRecoil = savedP1Rec;
+        state.p2HitRecoil = savedP2Rec;
         updateFirstPersonWeaponRig3D(fpRigP1, camP1, false, false);
         updateFirstPersonWeaponRig3D(fpRigP2, camP2, true, false);
       } else {
@@ -952,7 +1303,7 @@ const ThreeArenaEngine = (() => {
       camP1.position.set(
         shakeX - state.guardX * 0.05,
         1.42 + state.playerY * 0.54 + Math.sin(state.camBobPhase) * 0.016 + Math.sin(state.breathPhase) * 0.006 + shakeY,
-        state.playerZ - 0.32
+        state.playerZ - 0.28 + state.playerExtension * 0.44
       );
       camP1.lookAt(
         menuRatioShift - state.guardX * 0.08,
@@ -967,7 +1318,7 @@ const ThreeArenaEngine = (() => {
         baseZ: state.playerZ, jumpY: state.playerY, posture: state.playerPosture,
         ext: state.playerExtension, guardX: state.guardX, guardY: state.guardY,
         action: state.playerAction, attackQuad: state.quadrant, coupeLift: 0,
-        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null
+        slashPhase: state.sabreSlashPhase, wType, inRange, rivalProfile: null, oppPelvisZ: state.aiZ - state.aiExtension * 0.48
       }, nowSec);
       poseFencer3D(fencerP2, {
         baseZ: state.aiZ, jumpY: state.aiY, posture: state.aiPosture,
@@ -977,7 +1328,7 @@ const ThreeArenaEngine = (() => {
         attackQuad: isMenuOpen ? showcaseQuad : state.aiAttackQuad,
         coupeLift: state.aiCoupeLiftY,
         slashPhase: isMenuOpen ? showcaseSlash : state.p2SabreSlashPhase,
-        wType, inRange, rivalProfile
+        wType, inRange, rivalProfile, oppPelvisZ: state.playerZ + state.playerExtension * 0.48
       }, nowSec);
 
       updateFirstPersonWeaponRig3D(fpRigP1, camP1, false, true);
@@ -1209,7 +1560,7 @@ function renderViewportReticle(vw, vh, isP2Pov) {
   } else if (!isP2Pov && state.playerAction === Action.RECOVERY && state.remiseCooldown <= 0) {
     ctx.font = '800 9px "JetBrains Mono", monospace';
     ctx.fillStyle = '#a7f3d0';
-    ctx.fillText('LMB · REMISE · 补刺', aimX + 20, aimY + 20);
+    ctx.fillText('LMB · REMISE 补刺', aimX + 20, aimY + 20);
   }
   ctx.restore();
 }
@@ -1290,6 +1641,69 @@ function renderScene() {
     ctx.fillStyle = 'rgba(244, 63, 94, 0.88)';
     ctx.textAlign = 'right';
     ctx.fillText('P2 · DROITE (ARROWS + IJKL + ENTER)', w - 14, h - 18);
+    ctx.restore();
+  } else if (state.replayActive && !isMenuOpen) {
+    // FIE TV Official 3D Slow-Motion Replay Broadcast Frame & Scrubber Bar!
+    ctx.save();
+    ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(18, 66, w - 36, h - 138);
+
+    // Top-left Live REC / RALENTI badge
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.86)';
+    ctx.fillRect(30, 78, 290, 44);
+    ctx.fillStyle = '#f43f5e';
+    if (Math.sin(performance.now() * 0.012) > -0.3) {
+      ctx.beginPath();
+      ctx.arc(46, 100, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.font = 'italic 900 18px "Barlow Condensed", sans-serif';
+    ctx.fillStyle = '#fde047';
+    ctx.fillText('RALENTI OFFICIEL 3D // 0.38x SLOW-MO', 60, 98);
+    ctx.font = '700 10px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillText('CLICK / SPACE 跳过回放 · [R] 重播本剑', 60, 114);
+
+    // Top-right Olympic Broadcast Biomechanical Telemetry Readout (Measure, Tip Velocity & Extension %)
+    if (state.replayFrames.length >= 2) {
+      const rIdx = Math.min(state.replayFrames.length - 1, Math.max(1, Math.floor(state.replayCursor)));
+      const rfCurr = state.replayFrames[rIdx];
+      const rfPrev = state.replayFrames[rIdx - 1];
+      const repDist = Math.max(0, rfCurr.p2Z - rfCurr.p1Z);
+      const peakExtPct = Math.round(Math.max(rfCurr.p1Ext || 0, rfCurr.p2Ext || 0) * 100);
+      const dExt = Math.max(Math.abs((rfCurr.p1Ext || 0) - (rfPrev.p1Ext || 0)), Math.abs((rfCurr.p2Ext || 0) - (rfPrev.p2Ext || 0)));
+      const dBody = Math.max(Math.abs((rfCurr.p1Z || 0) - (rfPrev.p1Z || 0)), Math.abs((rfCurr.p2Z || 0) - (rfPrev.p2Z || 0)));
+      const tipSpeedMs = Math.min(18.8, 1.8 + (dExt * 0.92 + dBody) * 60 * 0.85);
+
+      const teleW = 286;
+      const teleX = w - teleW - 30;
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.86)';
+      ctx.fillRect(teleX, 78, teleW, 44);
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = '700 10px "JetBrains Mono", monospace';
+      ctx.fillText(`DISTANCE D'ASSAUT: ${repDist.toFixed(2)}m`, teleX + 12, 95);
+      ctx.fillStyle = '#fde047';
+      ctx.fillText(`POINTE: ${tipSpeedMs.toFixed(1)} m/s · ALLONGEMENT: ${peakExtPct}%`, teleX + 12, 113);
+    }
+
+    // Replay Timeline Progress Bar
+    const startIdx = Math.max(0, state.replayFrames.length - 52);
+    const denom = Math.max(1, state.replayFrames.length - 1 - startIdx);
+    const prog = Math.max(0, Math.min(1, (state.replayCursor - startIdx) / denom));
+    const barW = Math.min(360, w * 0.42);
+    const barX = (w - barW) * 0.5;
+    const barY = h - 84;
+    ctx.fillStyle = 'rgba(2, 6, 23, 0.85)';
+    ctx.fillRect(barX - 10, barY - 22, barW + 20, 34);
+    ctx.font = '700 10px "JetBrains Mono", monospace';
+    ctx.fillStyle = '#f8fafc';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.replaySummaryText || 'GRAND PALAIS PISTE CAMERA', w * 0.5, barY - 8);
+    ctx.fillStyle = 'rgba(51, 65, 85, 0.9)';
+    ctx.fillRect(barX, barY, barW, 4);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(barX, barY, barW * prog, 4);
     ctx.restore();
   } else if (!isMenuOpen) {
     renderInWorldGuardRing(w, h, false);

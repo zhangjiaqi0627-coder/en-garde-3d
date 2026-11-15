@@ -25,41 +25,54 @@ const Fencing3DAssets = (() => {
   function getProceduralPBRTextures() {
     if (_cachedTextures) return _cachedTextures;
 
-    // 1. Matte Antireflective 1600N Black-Steel Wire Mesh Faceplate Texture + Bump
-    const maskDiffC = makeCanvas(256, 256);
+    // 1. Unified Two-Tone 1600N Mask Texture (Zero-Clipping Single-Mesh UV Layout!)
+    // In buildSculptedLoftGeometry: u=0 -> +X, u=0.25 -> +Z (Front Faceplate!), u=0.5 -> -X, u=0.75 -> -Z (Back of Head)
+    const maskDiffC = makeCanvas(512, 256);
     const mctx = maskDiffC.getContext('2d');
-    const mg = mctx.createRadialGradient(128, 118, 14, 128, 128, 132);
+    // Base: Padded white/slate 1600N composite outer shell covering sides, crown & back
+    mctx.fillStyle = '#e2e8f0';
+    mctx.fillRect(0, 0, 512, 256);
+    mctx.fillStyle = '#cbd5e1';
+    mctx.fillRect(0, 0, 512, 28); // Lower chin collar trim
+    // Rear elastic strap detail around u=0.75 (x=384)
+    mctx.fillStyle = '#0f172a';
+    mctx.fillRect(310, 96, 148, 34);
+
+    // Front 1600N Black-Steel Wire Mesh Faceplate Window centered at u=0.25 (x=128, width=168 -> u in [0.086, 0.414])
+    mctx.save();
+    mctx.beginPath();
+    mctx.roundRect(44, 18, 168, 212, 36);
+    mctx.clip();
+
+    const mg = mctx.createRadialGradient(128, 122, 12, 128, 124, 118);
     mg.addColorStop(0, '#1e293b');
-    mg.addColorStop(0.55, '#0f172a');
+    mg.addColorStop(0.6, '#0f172a');
     mg.addColorStop(1, '#020617');
     mctx.fillStyle = mg;
-    mctx.fillRect(0, 0, 256, 256);
+    mctx.fillRect(40, 14, 176, 220);
 
-    // Subtle athlete brow/eyes glint behind dark steel wire mesh
-    mctx.fillStyle = 'rgba(226, 232, 240, 0.13)';
-    mctx.beginPath();
-    mctx.ellipse(98, 110, 17, 6, -0.06, 0, Math.PI * 2);
-    mctx.ellipse(158, 110, 17, 6, 0.06, 0, Math.PI * 2);
-    mctx.fill();
-
-    mctx.strokeStyle = 'rgba(148, 163, 184, 0.34)';
-    mctx.lineWidth = 1.1;
-    for (let i = -256; i < 512; i += 6) {
-      mctx.beginPath();
-      mctx.moveTo(i, 0);
-      mctx.lineTo(i + 256, 256);
-      mctx.stroke();
-      mctx.beginPath();
-      mctx.moveTo(i + 256, 0);
-      mctx.lineTo(i, 256);
-      mctx.stroke();
+    // Woven 1600N steel diamond grid inside faceplate window
+    mctx.strokeStyle = 'rgba(148, 163, 184, 0.30)';
+    mctx.lineWidth = 1.0;
+    for (let i = -200; i < 360; i += 6) {
+      mctx.beginPath(); mctx.moveTo(40 + i, 14); mctx.lineTo(40 + i + 220, 234); mctx.stroke();
+      mctx.beginPath(); mctx.moveTo(40 + i + 220, 14); mctx.lineTo(40 + i, 234); mctx.stroke();
     }
-    const spineG = mctx.createLinearGradient(122, 0, 134, 0);
+    // Center ridge highlight along nose bridge (u=0.25 -> x=128)
+    const spineG = mctx.createLinearGradient(121, 0, 135, 0);
     spineG.addColorStop(0, 'rgba(255,255,255,0)');
-    spineG.addColorStop(0.5, 'rgba(226, 232, 240, 0.32)');
+    spineG.addColorStop(0.5, 'rgba(226, 232, 240, 0.28)');
     spineG.addColorStop(1, 'rgba(255,255,255,0)');
     mctx.fillStyle = spineG;
-    mctx.fillRect(120, 0, 16, 256);
+    mctx.fillRect(120, 18, 16, 212);
+    mctx.restore();
+
+    // Crisp rubberized vulcanized bezel border around faceplate window
+    mctx.strokeStyle = '#0f172a';
+    mctx.lineWidth = 7;
+    mctx.beginPath();
+    mctx.roundRect(44, 18, 168, 212, 36);
+    mctx.stroke();
 
     const maskBumpC = makeCanvas(128, 128);
     const mbctx = maskBumpC.getContext('2d');
@@ -190,7 +203,55 @@ const Fencing3DAssets = (() => {
     return _cachedTextures;
   }
 
-  function buildSculptedLoftGeometry(slices, radialSegs = 28, capBottom = true, capTop = true) {
+  // Catmull-Rom 1D helper for silky organic anatomical muscle curves between control slices
+  function catmullRom1D(p0, p1, p2, p3, t) {
+    const t2 = t * t;
+    const t3 = t2 * t;
+    return 0.5 * (
+      (2 * p1) +
+      (-p0 + p2) * t +
+      (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+      (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+    );
+  }
+
+  function buildSculptedLoftGeometry(rawSlices, radialSegs = 32, capBottom = true, capTop = true) {
+    // Subdivide vertical control slices 3x via clamped Catmull-Rom splines so silhouettes are silky-smooth!
+    const slices = [];
+    const nRaw = rawSlices.length;
+    const subSteps = nRaw >= 3 ? 3 : 1;
+    for (let i = 0; i < nRaw - 1; i++) {
+      const s0 = rawSlices[Math.max(0, i - 1)];
+      const s1 = rawSlices[i];
+      const s2 = rawSlices[i + 1];
+      const s3 = rawSlices[Math.min(nRaw - 1, i + 2)];
+      for (let sub = 0; sub < subSteps; sub++) {
+        const t = sub / subSteps;
+        slices.push({
+          y: s1.y + (s2.y - s1.y) * t,
+          rx: Math.max(0.001, catmullRom1D(s0.rx, s1.rx, s2.rx, s3.rx, t)),
+          rz: Math.max(0.001, catmullRom1D(s0.rz, s1.rz, s2.rz, s3.rz, t)),
+          ox: catmullRom1D(s0.ox || 0, s1.ox || 0, s2.ox || 0, s3.ox || 0, t),
+          oz: catmullRom1D(s0.oz || 0, s1.oz || 0, s2.oz || 0, s3.oz || 0, t),
+          frontScale: catmullRom1D(
+            s0.frontScale !== undefined ? s0.frontScale : 1,
+            s1.frontScale !== undefined ? s1.frontScale : 1,
+            s2.frontScale !== undefined ? s2.frontScale : 1,
+            s3.frontScale !== undefined ? s3.frontScale : 1,
+            t
+          ),
+          backScale: catmullRom1D(
+            s0.backScale !== undefined ? s0.backScale : 1,
+            s1.backScale !== undefined ? s1.backScale : 1,
+            s2.backScale !== undefined ? s2.backScale : 1,
+            s3.backScale !== undefined ? s3.backScale : 1,
+            t
+          )
+        });
+      }
+    }
+    slices.push(rawSlices[nRaw - 1]);
+
     const ringCount = slices.length;
     const stride = radialSegs + 1;
     const positions = [];
@@ -210,7 +271,9 @@ const Fencing3DAssets = (() => {
         const theta = u * Math.PI * 2;
         const cosT = Math.cos(theta);
         const sinT = Math.sin(theta);
-        const asymZ = sinT >= 0 ? frontS : backS;
+        // Smooth C1 blend between front and back muscle scale so lateral seam has zero normal kink
+        const blend = 0.5 + 0.5 * sinT;
+        const asymZ = backS + (frontS - backS) * blend;
         positions.push(ox + cosT * s.rx, s.y, oz + sinT * s.rz * asymZ);
         uvs.push(u, v);
       }
@@ -252,6 +315,24 @@ const Fencing3DAssets = (() => {
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(indices);
     geo.computeVertexNormals();
+
+    // Weld UV seam normals (j=0 and j=radialSegs) so cylindrical wrap is 100% seamless
+    const normAttr = geo.getAttribute ? geo.getAttribute('normal') : null;
+    if (normAttr && normAttr.array) {
+      const nArr = normAttr.array;
+    for (let i = 0; i < ringCount; i++) {
+      const i0 = (i * stride) * 3;
+      const i1 = (i * stride + radialSegs) * 3;
+      const nx = nArr[i0] + nArr[i1];
+      const ny = nArr[i0 + 1] + nArr[i1 + 1];
+      const nz = nArr[i0 + 2] + nArr[i1 + 2];
+      const len = Math.hypot(nx, ny, nz) || 1;
+      nArr[i0] = nArr[i1] = nx / len;
+      nArr[i0 + 1] = nArr[i1 + 1] = ny / len;
+      nArr[i0 + 2] = nArr[i1 + 2] = nz / len;
+    }
+      normAttr.needsUpdate = true;
+    }
     return geo;
   }
 
@@ -288,14 +369,38 @@ const Fencing3DAssets = (() => {
       metalness: 0.78,
       roughness: 0.22
     });
-    const tipGeo = new THREE.CylinderGeometry(
-      weaponType === 'epee' ? 0.0050 : 0.0036,
-      weaponType === 'epee' ? 0.0044 : 0.0030,
-      weaponType === 'foil' ? 0.026 : 0.015,
-      10
-    );
-    const tipCap = new THREE.Mesh(tipGeo, tipMat);
+    const tipCap = new THREE.Group();
     tipCap.frustumCulled = false;
+    if (weaponType === 'sabre') {
+      // Authentic FIE Sabre folded safety loop tip (Bout replié)
+      const loopMesh = new THREE.Mesh(new THREE.TorusGeometry(0.0048, 0.0018, 8, 14), tipMat);
+      loopMesh.scale.set(0.72, 1.35, 1.0);
+      tipCap.add(loopMesh);
+    } else {
+      // Two-part steel barrel + sliding electric plunger button (Pointe d'arrêt)
+      const barrelMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.92, roughness: 0.18 });
+      const barrel = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          weaponType === 'epee' ? 0.0048 : 0.0035,
+          weaponType === 'epee' ? 0.0042 : 0.0029,
+          weaponType === 'foil' ? 0.019 : 0.013,
+          12
+        ),
+        barrelMat
+      );
+      barrel.position.y = -0.004;
+      const plunger = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          weaponType === 'epee' ? 0.0052 : 0.0038,
+          weaponType === 'epee' ? 0.0050 : 0.0036,
+          0.0065,
+          12
+        ),
+        tipMat
+      );
+      plunger.position.y = 0.006;
+      tipCap.add(barrel, plunger);
+    }
 
     return { mesh, tipCap, stations, ringVerts, weaponType };
   }
@@ -315,18 +420,30 @@ const Fencing3DAssets = (() => {
     const baseHalfW = weaponType === 'epee' ? 0.0092 : (weaponType === 'sabre' ? 0.0040 : 0.0055);
     const baseHalfH = weaponType === 'sabre' ? 0.0088 : (weaponType === 'epee' ? 0.0070 : 0.0045);
 
+    // Decompose midpoint p1 into chord midpoint + transverse elastic deflection vector (dX, dY, dZ):
+    // Real FIE Maraging steel has a thick rectangular/V-section Forte near the bell guard (t < 0.35)
+    // and bends smoothly in the distal Foible third (peak around t ~ 0.62) with ZERO sharp midpoint kink!
+    const midChordX = (p0.x + p2.x) * 0.5;
+    const midChordY = (p0.y + p2.y) * 0.5;
+    const midChordZ = (p0.z + p2.z) * 0.5;
+    const defX = p1.x - midChordX;
+    const defY = p1.y - midChordY;
+    const defZ = p1.z - midChordZ;
+
     for (let i = 0; i < stations; i++) {
       const t = i / (stations - 1);
-      const inv = 1 - t;
+      // C1-smooth Foible-weighted beam shape: w(t) = 2.60 * t^1.45 * (1 - t) -> w(0)=0, w'(0)=0 (stiff Forte!), peak=1.0 at t=0.59, w(1)=0
+      const w = 2.60 * Math.pow(t, 1.45) * (1 - t);
+      const dw = 2.60 * (1.45 * Math.pow(Math.max(1e-4, t), 0.45) * (1 - t) - Math.pow(t, 1.45));
       _tmpP.set(
-        inv * inv * p0.x + 2 * inv * t * p1.x + t * t * p2.x,
-        inv * inv * p0.y + 2 * inv * t * p1.y + t * t * p2.y,
-        inv * inv * p0.z + 2 * inv * t * p1.z + t * t * p2.z
+        p0.x + (p2.x - p0.x) * t + defX * w,
+        p0.y + (p2.y - p0.y) * t + defY * w,
+        p0.z + (p2.z - p0.z) * t + defZ * w
       );
       _tmpT.set(
-        2 * inv * (p1.x - p0.x) + 2 * t * (p2.x - p1.x),
-        2 * inv * (p1.y - p0.y) + 2 * t * (p2.y - p1.y),
-        2 * inv * (p1.z - p0.z) + 2 * t * (p2.z - p1.z)
+        (p2.x - p0.x) + defX * dw,
+        (p2.y - p0.y) + defY * dw,
+        (p2.z - p0.z) + defZ * dw
       ).normalize();
 
       _tmpRight.crossVectors(_tmpUp, _tmpT);
@@ -393,30 +510,27 @@ const Fencing3DAssets = (() => {
     });
 
     function buildViscontiGripGroup() {
+      // Compact ergonomic pistol grip enclosed cleanly inside gloveFist (zero protrusion through top of glove!)
       const g = new THREE.Group();
-      const palmMain = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.0135, 0.0165, 0.108, 14),
+      const palmCore = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.011, 0.013, 0.072, 12),
         gripAnodizedMat
       );
-      palmMain.rotation.x = Math.PI * 0.45;
-      palmMain.position.set(0, -0.010, -0.022);
-      g.add(palmMain);
+      palmCore.rotation.x = Math.PI * 0.5;
+      palmCore.position.set(0, -0.008, -0.012);
+      g.add(palmCore);
 
-      const lowerProng = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.010, 0.007, 0.048, 12),
+      const lowerTriggerProng = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0085, 0.006, 0.034, 10),
         gripAnodizedMat
       );
-      lowerProng.rotation.x = 0.20;
-      lowerProng.position.set(0, -0.042, -0.010);
-      g.add(lowerProng);
+      lowerTriggerProng.rotation.x = 0.18;
+      lowerTriggerProng.position.set(0, -0.034, -0.004);
+      g.add(lowerTriggerProng);
 
-      const thumbFin = new THREE.Mesh(new THREE.BoxGeometry(0.013, 0.020, 0.032), gripAnodizedMat);
-      thumbFin.position.set(-0.008, 0.014, 0.008);
-      g.add(thumbFin);
-
-      const pommel = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.0085, 0.024, 12), steelGuardMat);
-      pommel.rotation.x = Math.PI * 0.45;
-      pommel.position.set(0, -0.020, -0.078);
+      const pommel = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.008, 0.022, 12), steelGuardMat);
+      pommel.rotation.x = Math.PI * 0.5;
+      pommel.position.set(0, -0.010, -0.076);
       g.add(pommel);
       return g;
     }
@@ -434,9 +548,29 @@ const Fencing3DAssets = (() => {
     foilBell.rotation.x = Math.PI * 0.5;
     foilHilt.add(foilBell);
 
-    const foilPad = new THREE.Mesh(new THREE.RingGeometry(0.008, 0.041, 24), padLeatherMat);
+    const socketDarkMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.45, roughness: 0.48 });
+    const brassPinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.90, roughness: 0.20 });
+    function buildInteriorSocket(xOff, yOff, zOff) {
+      const sg = new THREE.Group();
+      const blk = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.014, 0.014), socketDarkMat);
+      const pinGeo = new THREE.CylinderGeometry(0.0018, 0.0018, 0.010, 8);
+      const pinA = new THREE.Mesh(pinGeo, brassPinMat);
+      pinA.rotation.x = Math.PI * 0.5;
+      pinA.position.set(-0.004, 0, -0.009);
+      const pinB = new THREE.Mesh(pinGeo, brassPinMat);
+      pinB.rotation.x = Math.PI * 0.5;
+      pinB.position.set(0.004, 0, -0.009);
+      const bail = new THREE.Mesh(new THREE.TorusGeometry(0.0065, 0.0011, 6, 12, Math.PI), steelGuardMat);
+      bail.position.set(0, 0.007, -0.004);
+      sg.add(blk, pinA, pinB, bail);
+      sg.position.set(xOff, yOff, zOff);
+      return sg;
+    }
+
+    const foilPad = new THREE.Mesh(new THREE.RingGeometry(0.008, 0.043, 28), padLeatherMat);
     foilPad.position.z = 0.037;
     foilHilt.add(foilPad);
+    foilHilt.add(buildInteriorSocket(-0.016, 0.015, 0.031));
     foilHilt.add(buildViscontiGripGroup());
 
     // 2. ÉPÉE HILT (13.5cm deep eccentric hemispherical bowl; pad recessed cleanly inside!)
@@ -458,12 +592,7 @@ const Fencing3DAssets = (() => {
     epeePad.position.set(0.010, 0.003, 0.024);
     epeeHilt.add(epeePad);
 
-    const socketBlock = new THREE.Mesh(
-      new THREE.BoxGeometry(0.020, 0.016, 0.016),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.4, roughness: 0.5 })
-    );
-    socketBlock.position.set(-0.012, 0.014, 0.034);
-    epeeHilt.add(socketBlock);
+    epeeHilt.add(buildInteriorSocket(-0.015, 0.016, 0.030));
     epeeHilt.add(buildViscontiGripGroup());
 
     // 3. SABRE HILT (Asymmetric Dish + Swept 3D Knuckle-Bow Branche)
@@ -479,12 +608,13 @@ const Fencing3DAssets = (() => {
     sabreDish.position.set(0.008, 0, 0);
     sabreHilt.add(sabreDish);
 
+    // Sweeps generously outside the gloved knuckles (+X/+Y clearance) from guard rim to pommel with zero glove intersection!
     const bowCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.010, 0.042, 0.056),
-      new THREE.Vector3(0.058, 0.016, 0.036),
-      new THREE.Vector3(0.062, -0.022, -0.018),
-      new THREE.Vector3(0.032, -0.030, -0.074),
-      new THREE.Vector3(0.000, -0.006, -0.095)
+      new THREE.Vector3(0.012, 0.046, 0.052),
+      new THREE.Vector3(0.064, 0.018, 0.030),
+      new THREE.Vector3(0.068, -0.026, -0.024),
+      new THREE.Vector3(0.042, -0.038, -0.076),
+      new THREE.Vector3(0.000, -0.008, -0.098)
     ]);
     const bowTube = new THREE.Mesh(new THREE.TubeGeometry(bowCurve, 24, 0.0065, 10, false), sabreChromeMat);
     sabreHilt.add(bowTube);
@@ -496,6 +626,11 @@ const Fencing3DAssets = (() => {
     sabreGrip.rotation.x = Math.PI * 0.5;
     sabreGrip.position.set(0, -0.004, -0.028);
     sabreHilt.add(sabreGrip);
+
+    const sabrePad = new THREE.Mesh(new THREE.RingGeometry(0.008, 0.044, 24), padLeatherMat);
+    sabrePad.position.set(0.008, 0, 0.036);
+    sabreHilt.add(sabrePad);
+    sabreHilt.add(buildInteriorSocket(-0.015, 0.014, 0.030));
 
     const sabrePommel = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.011, 0.022, 14), sabreChromeMat);
     sabrePommel.rotation.x = Math.PI * 0.5;
@@ -586,132 +721,170 @@ const Fencing3DAssets = (() => {
     const torsoGroup = new THREE.Group();
     pelvisGroup.add(torsoGroup);
 
-    const torsoSlices = [
+    // ZERO-CLIPPING PARTITIONED TORSO:
+    // Split cleanly at the waist belt (y = 0.094) so Foil/Sabre/Epee switch materials directly on a SINGLE surface
+    // instead of stacking two co-planar meshes that Z-fight or poke through each other!
+    const lowerTorsoSlices = [
       { y: -0.05, rx: 0.138, rz: 0.098, oz: 0.004, frontScale: 1.05, backScale: 1.02 },
-      { y:  0.01, rx: 0.158, rz: 0.112, oz: 0.002, frontScale: 1.00, backScale: 1.06 },
-      { y:  0.10, rx: 0.140, rz: 0.100, oz: 0.005, frontScale: 1.02, backScale: 0.96 }, // Athletic waist taper
-      { y:  0.21, rx: 0.165, rz: 0.116, oz: 0.010, frontScale: 1.08, backScale: 1.02 }, // Ribcage
-      { y:  0.32, rx: 0.188, rz: 0.128, oz: 0.012, frontScale: 1.12, backScale: 1.04 }, // Pectoral chest & lats
-      { y:  0.40, rx: 0.196, rz: 0.118, oz: 0.005, frontScale: 1.05, backScale: 1.04 }, // Clavicle/deltoid bridge
-      { y:  0.46, rx: 0.124, rz: 0.090, oz: 0.004, frontScale: 1.00, backScale: 1.00 }, // Trapezius slope
-      { y:  0.52, rx: 0.072, rz: 0.070, oz: 0.005, frontScale: 1.02, backScale: 1.00 }  // High 800N collar
+      { y:  0.02, rx: 0.156, rz: 0.110, oz: 0.003, frontScale: 1.01, backScale: 1.05 },
+      { y:  0.096, rx: 0.141, rz: 0.100, oz: 0.005, frontScale: 1.02, backScale: 0.97 }
     ];
-    const torsoMesh = new THREE.Mesh(buildSculptedLoftGeometry(torsoSlices, 32), kevlarMat);
-    torsoMesh.castShadow = true;
-    torsoMesh.receiveShadow = true;
-    torsoGroup.add(torsoMesh);
+    const upperTorsoSlices = [
+      { y:  0.092, rx: 0.141, rz: 0.100, oz: 0.005, frontScale: 1.02, backScale: 0.97 },
+      { y:  0.21, rx: 0.165, rz: 0.116, oz: 0.010, frontScale: 1.08, backScale: 1.02 },
+      { y:  0.32, rx: 0.188, rz: 0.128, oz: 0.012, frontScale: 1.12, backScale: 1.04 },
+      { y:  0.40, rx: 0.194, rz: 0.118, oz: 0.005, frontScale: 1.05, backScale: 1.04 },
+      { y:  0.46, rx: 0.124, rz: 0.090, oz: 0.004, frontScale: 1.00, backScale: 1.00 },
+      { y:  0.52, rx: 0.072, rz: 0.070, oz: 0.005, frontScale: 1.02, backScale: 1.00 }
+    ];
+    const lowerTorsoMesh = new THREE.Mesh(buildSculptedLoftGeometry(lowerTorsoSlices, 32, true, false), kevlarMat);
+    lowerTorsoMesh.castShadow = true;
+    lowerTorsoMesh.receiveShadow = true;
+    torsoGroup.add(lowerTorsoMesh);
 
-    const foilLameSlices = torsoSlices.map(s => ({
-      y: s.y,
-      rx: s.rx + 0.0045,
-      rz: s.rz + 0.0045,
-      oz: s.oz,
-      frontScale: s.frontScale,
-      backScale: s.backScale
-    }));
-    const foilLameMesh = new THREE.Mesh(buildSculptedLoftGeometry(foilLameSlices, 32, false, false), foilLameMat);
-    foilLameMesh.castShadow = true;
-    torsoGroup.add(foilLameMesh);
+    const upperTorsoMesh = new THREE.Mesh(buildSculptedLoftGeometry(upperTorsoSlices, 32, false, true), foilLameMat);
+    upperTorsoMesh.castShadow = true;
+    upperTorsoMesh.receiveShadow = true;
+    torsoGroup.add(upperTorsoMesh);
 
-    const sabreTorsoSlices = torsoSlices.filter(s => s.y >= 0.09).map(s => ({
-      y: s.y,
-      rx: s.rx + 0.0055,
-      rz: s.rz + 0.0055,
-      oz: s.oz,
-      frontScale: s.frontScale,
-      backScale: s.backScale
-    }));
-    const sabreLameTorsoMesh = new THREE.Mesh(buildSculptedLoftGeometry(sabreTorsoSlices, 32, false, false), sabreLameMat);
-    sabreLameTorsoMesh.visible = false;
-    torsoGroup.add(sabreLameTorsoMesh);
+    // Keep legacy references pointing cleanly for API compatibility
+    const torsoMesh = lowerTorsoMesh;
+    const foilLameMesh = upperTorsoMesh;
+    const sabreLameTorsoMesh = upperTorsoMesh;
 
-    const waistTrim = new THREE.Mesh(new THREE.TorusGeometry(0.142, 0.005, 8, 28), stripeAccentMat);
-    waistTrim.rotation.x = Math.PI * 0.5;
-    waistTrim.scale.set(1.04, 0.74, 1);
-    waistTrim.position.set(0, 0.092, 0.005);
+    // Concentric Lofted Waist Belt (matches y=0.094 ellipse + 5mm clearance so zero torus-clipping!)
+    const waistBeltSlices = [
+      { y: 0.084, rx: 0.147, rz: 0.106, oz: 0.005, frontScale: 1.02, backScale: 0.97 },
+      { y: 0.104, rx: 0.147, rz: 0.106, oz: 0.005, frontScale: 1.02, backScale: 0.97 }
+    ];
+    const waistTrim = new THREE.Mesh(buildSculptedLoftGeometry(waistBeltSlices, 32, false, false), stripeAccentMat);
     torsoGroup.add(waistTrim);
 
-    // 2. Two-Tone Authentic 1600N FIE Fencing Mask:
-    // White/Slate Outer Padded Crown Shell + Jet-Dark Antireflective Wire Faceplate + Draped Bib!
+    // Authentic FIE Croisée Diagonal Jacket Closure Seam & Back Waist Clip Ring (Mousqueton)
+    const seamSide = isP1 ? 1 : -1;
+    const seamPipingMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.42, metalness: 0.45 });
+    const croiseCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(seamSide * 0.042, 0.485, 0.096),
+      new THREE.Vector3(seamSide * 0.096, 0.350, 0.152),
+      new THREE.Vector3(seamSide * 0.112, 0.215, 0.134),
+      new THREE.Vector3(seamSide * 0.095, 0.104, 0.106)
+    ]);
+    const croisePiping = new THREE.Mesh(
+      new THREE.TubeGeometry(croiseCurve, 22, 0.0028, 6, false),
+      seamPipingMat
+    );
+    torsoGroup.add(croisePiping);
+
+    // Back Waist Body-Cord Clip Housing (at y=0.095, rear -Z)
+    const rearCordClip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.028, 0.026, 0.022),
+      darkTrimMat
+    );
+    rearCordClip.position.set(seamSide * 0.04, 0.095, -0.106);
+    torsoGroup.add(rearCordClip);
+
+    // 2. Unified Single-Surface Two-Tone 1600N FIE Fencing Mask (Zero shell-vs-cage internal clipping!)
     const headGroup = new THREE.Group();
-    headGroup.position.set(0, 0.515, 0.008);
+    headGroup.position.set(0, 0.525, 0.008);
     torsoGroup.add(headGroup);
 
-    // Outer composite padded mask shell (covers crown, temples & back of head)
-    const outerShellSlices = [
-      { y:  0.00, rx: 0.072, rz: 0.088, oz: -0.014, frontScale: 0.75, backScale: 1.05 },
-      { y:  0.07, rx: 0.098, rz: 0.106, oz: -0.016, frontScale: 0.80, backScale: 1.08 },
-      { y:  0.15, rx: 0.104, rz: 0.114, oz: -0.014, frontScale: 0.82, backScale: 1.08 },
-      { y:  0.22, rx: 0.092, rz: 0.106, oz: -0.010, frontScale: 0.90, backScale: 1.04 },
-      { y:  0.265, rx: 0.048, rz: 0.062, oz: -0.008, frontScale: 1.0, backScale: 1.0 }
+    const unifiedMaskSlices = [
+      { y:  0.000, rx: 0.072, rz: 0.086, oz: 0.006, frontScale: 1.12, backScale: 0.96 },
+      { y:  0.055, rx: 0.094, rz: 0.106, oz: 0.008, frontScale: 1.16, backScale: 1.02 },
+      { y:  0.125, rx: 0.100, rz: 0.114, oz: 0.008, frontScale: 1.18, backScale: 1.04 },
+      { y:  0.195, rx: 0.092, rz: 0.108, oz: 0.005, frontScale: 1.12, backScale: 1.02 },
+      { y:  0.248, rx: 0.064, rz: 0.078, oz: 0.000, frontScale: 1.02, backScale: 1.00 },
+      { y:  0.272, rx: 0.032, rz: 0.040, oz: -0.004, frontScale: 1.00, backScale: 1.00 }
     ];
-    const outerShellMat = new THREE.MeshStandardMaterial({
-      color: 0xe2e8f0,
-      map: tex.kevlarMap,
-      roughness: 0.45,
-      metalness: 0.15
-    });
-    const outerMaskShell = new THREE.Mesh(buildSculptedLoftGeometry(outerShellSlices, 28), outerShellMat);
-    outerMaskShell.castShadow = true;
-    headGroup.add(outerMaskShell);
-
-    // Front Dark Gunmetal 1600N Woven Steel Mesh Faceplate (authentic black fencing mask face!)
-    const faceMeshSlices = [
-      { y: -0.015, rx: 0.056, rz: 0.068, oz: 0.048, frontScale: 1.15, backScale: 0.45 },
-      { y:  0.045, rx: 0.086, rz: 0.082, oz: 0.044, frontScale: 1.18, backScale: 0.45 },
-      { y:  0.115, rx: 0.096, rz: 0.088, oz: 0.042, frontScale: 1.20, backScale: 0.45 },
-      { y:  0.185, rx: 0.090, rz: 0.084, oz: 0.038, frontScale: 1.16, backScale: 0.45 },
-      { y:  0.238, rx: 0.068, rz: 0.066, oz: 0.028, frontScale: 1.05, backScale: 0.45 }
-    ];
-    const faceWireMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
+    const maskGeo = buildSculptedLoftGeometry(unifiedMaskSlices, 36);
+    const maskUvAttr = maskGeo.getAttribute ? maskGeo.getAttribute('uv') : null;
+    if (maskUvAttr && maskUvAttr.array) {
+      const uvArr = maskUvAttr.array;
+      const vCols = new Float32Array((uvArr.length / 2) * 3);
+      for (let k = 0; k < uvArr.length / 2; k++) {
+        const u = uvArr[k * 2];
+        const v = uvArr[k * 2 + 1];
+        const inFaceWindow = (u >= 0.09 && u <= 0.41 && v >= 0.07 && v <= 0.90);
+        if (inFaceWindow) {
+          vCols[k * 3] = 0.14; vCols[k * 3 + 1] = 0.18; vCols[k * 3 + 2] = 0.25;
+        } else {
+          vCols[k * 3] = 0.94; vCols[k * 3 + 1] = 0.96; vCols[k * 3 + 2] = 0.99;
+        }
+      }
+      maskGeo.setAttribute('color', new THREE.Float32BufferAttribute(vCols, 3));
+    }
+    const unifiedMaskMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      vertexColors: true,
       map: tex.maskMap,
       bumpMap: tex.maskBump,
-      bumpScale: 0.014,
-      metalness: 0.82,
-      roughness: 0.28
+      bumpScale: 0.008,
+      metalness: 0.45,
+      roughness: 0.36
     });
-    const maskCageMesh = new THREE.Mesh(buildSculptedLoftGeometry(faceMeshSlices, 28), faceWireMat);
+    const maskCageMesh = new THREE.Mesh(maskGeo, unifiedMaskMat);
     maskCageMesh.castShadow = true;
     headGroup.add(maskCageMesh);
 
-    // 3D Perimeter Mask Bezel Rim framing the dark wire faceplate
+    // 3D Perimeter Accent Trim sitting cleanly OUTSIDE (+6mm) the mask faceplate border
     const rimBandCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, -0.020, 0.118),
-      new THREE.Vector3(0.092, 0.055, 0.068),
-      new THREE.Vector3(0.096, 0.175, 0.055),
-      new THREE.Vector3(0, 0.246, 0.075),
-      new THREE.Vector3(-0.096, 0.175, 0.055),
-      new THREE.Vector3(-0.092, 0.055, 0.068),
-      new THREE.Vector3(0, -0.020, 0.118)
+      new THREE.Vector3(0, 0.004, 0.109),
+      new THREE.Vector3(0.086, 0.065, 0.078),
+      new THREE.Vector3(0.089, 0.175, 0.072),
+      new THREE.Vector3(0, 0.238, 0.090),
+      new THREE.Vector3(-0.089, 0.175, 0.072),
+      new THREE.Vector3(-0.086, 0.065, 0.078),
+      new THREE.Vector3(0, 0.004, 0.109)
     ]);
-    const maskRimMesh = new THREE.Mesh(new THREE.TubeGeometry(rimBandCurve, 36, 0.0085, 10, true), stripeAccentMat);
+    const maskRimMesh = new THREE.Mesh(new THREE.TubeGeometry(rimBandCurve, 36, 0.0055, 8, true), stripeAccentMat);
     headGroup.add(maskRimMesh);
 
-    // Subtle Visor Eye-Line Telemetry Glint on Front Wire Cage
+    // Subtle Visor Eye-Line Glint cleanly +5mm in front of nose bridge (oz + rz*frontScale = 0.008 + 0.114*1.18 = 0.142)
     const visorArc = new THREE.Mesh(
-      new THREE.TorusGeometry(0.094, 0.0038, 8, 22, Math.PI * 0.56),
+      new THREE.TorusGeometry(0.102, 0.0035, 8, 22, Math.PI * 0.48),
       stripeAccentMat
     );
     visorArc.rotation.x = Math.PI * 0.5;
-    visorArc.rotation.z = Math.PI * 0.22;
-    visorArc.position.set(0, 0.128, 0.052);
+    visorArc.rotation.z = Math.PI * 0.26;
+    visorArc.position.set(0, 0.132, 0.044);
     headGroup.add(visorArc);
 
-    // Draped Quilted Trapezoidal Bib (offset cleanly OVER front of collar, zero Z-clipping!)
-    const bibSlices = [
-      { y: -0.095, rx: 0.104, rz: 0.032, oz: 0.102, frontScale: 1.15, backScale: 0.45 },
-      { y: -0.048, rx: 0.086, rz: 0.030, oz: 0.094, frontScale: 1.15, backScale: 0.45 },
-      { y: -0.004, rx: 0.066, rz: 0.028, oz: 0.086, frontScale: 1.10, backScale: 0.45 }
-    ];
+    // Authentic Front Trapezoidal Conductive Mask Bib (Bavette) suspended beneath mask chin (+Z front sector only, zero collar clipping!)
+    const bibArcGeo = new THREE.CylinderGeometry(0.074, 0.094, 0.068, 20, 3, true, -Math.PI * 0.34, Math.PI * 0.68);
     const bibMat = new THREE.MeshStandardMaterial({
       color: 0xcbd5e1,
       map: tex.lameFoilMap,
-      metalness: 0.68,
-      roughness: 0.34
+      metalness: 0.78,
+      roughness: 0.26,
+      side: THREE.DoubleSide
     });
-    const bibMesh = new THREE.Mesh(buildSculptedLoftGeometry(bibSlices, 20), bibMat);
+    const bibMesh = new THREE.Mesh(bibArcGeo, bibMat);
+    bibMesh.position.set(0, -0.022, 0.024);
+    bibMesh.rotation.x = -0.16;
     headGroup.add(bibMesh);
+
+    const bibRimPts = [];
+    for (let k = 0; k <= 12; k++) {
+      const ang = (-0.34 + 0.68 * (k / 12)) * Math.PI;
+      bibRimPts.push(new THREE.Vector3(Math.sin(ang) * 0.095, -0.056, Math.cos(ang) * 0.095 + 0.029));
+    }
+    const bibBorder = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(bibRimPts), 16, 0.0032, 6, false),
+      stripeAccentMat
+    );
+    headGroup.add(bibBorder);
+
+    // Curved Conductive Mask Clip Cord (Cordon de tête) arching cleanly behind mask for Foil & Sabre!
+    const maskCordCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.00, 0.015, -0.084),
+      new THREE.Vector3(0.025, -0.018, -0.112),
+      new THREE.Vector3(0.015, -0.055, -0.095)
+    ]);
+    const maskCordMesh = new THREE.Mesh(
+      new THREE.TubeGeometry(maskCordCurve, 14, 0.0032, 6, false),
+      stripeAccentMat
+    );
+    headGroup.add(maskCordMesh);
 
     // 3. Organic Limb Segments with Seamless Joint Ball Caps (Shoulder Deltoid, Elbow, Knee, Ankle!)
     function createLimbSegment(slices, mat, capRadiusBottom = 0, capRadiusTop = 0) {
@@ -727,19 +900,20 @@ const Fencing3DAssets = (() => {
         bottomBall.castShadow = true;
         grp.add(bottomBall);
       }
+      let topBall = null;
       if (capRadiusTop > 0) {
-        const topBall = new THREE.Mesh(new THREE.SphereGeometry(capRadiusTop, 16, 12), mat);
+        topBall = new THREE.Mesh(new THREE.SphereGeometry(capRadiusTop, 16, 12), mat);
         topBall.position.y = slices[slices.length - 1].y;
         grp.add(topBall);
       }
       root.add(grp);
-      return { grp, mesh, bottomBall };
+      return { grp, mesh, bottomBall, topBall };
     }
 
     const upperArmLen = 0.30;
     const forearmLen = 0.27;
-    const thighLen = 0.43;
-    const calfLen = 0.41;
+    const thighLen = 0.46;
+    const calfLen = 0.44;
 
     const upperArmSlices = [
       { y: 0.00, rx: 0.060, rz: 0.062 },
@@ -757,13 +931,13 @@ const Fencing3DAssets = (() => {
       { y: 0.00, rx: 0.088, rz: 0.094 },
       { y: 0.14, rx: 0.084, rz: 0.092, oz: 0.006, frontScale: 1.08 },
       { y: 0.31, rx: 0.066, rz: 0.070, oz: 0.004 },
-      { y: 0.43, rx: 0.056, rz: 0.058 }
+      { y: 0.46, rx: 0.055, rz: 0.057 }
     ];
     const calfSlices = [
       { y: 0.00, rx: 0.056, rz: 0.058, oz: 0.003 },
       { y: 0.11, rx: 0.055, rz: 0.063, oz: -0.008, backScale: 1.16 },
       { y: 0.28, rx: 0.039, rz: 0.042 },
-      { y: 0.41, rx: 0.034, rz: 0.037 }
+      { y: 0.44, rx: 0.034, rz: 0.037 }
     ];
 
     const leadUpperArm = createLimbSegment(upperArmSlices, kevlarMat, 0.064, 0.041);
@@ -776,42 +950,73 @@ const Fencing3DAssets = (() => {
     const rearThigh = createLimbSegment(thighSlices, breechesMat, 0.088, 0.057);
     const rearCalf  = createLimbSegment(calfSlices, kevlarMat, 0.057, 0.036);
 
-    // Crisp National Stripe Ring on Lead Thigh & High Fencing Socks
-    const thighStripe1 = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.077, 0.028, 22, 1, true), stripeAccentMat);
-    thighStripe1.position.y = 0.21;
-    leadThigh.grp.add(thighStripe1);
+    // Concentric Muscle-Matched Lofted Stripes (+4.5mm outside quad & gastrocnemius, zero cylinder-clipping!)
+    const stripeOverlayMat = stripeAccentMat.clone();
+    stripeOverlayMat.polygonOffset = true;
+    stripeOverlayMat.polygonOffsetFactor = -2;
+    stripeOverlayMat.polygonOffsetUnits = -2;
 
-    const sockTopBandL = new THREE.Mesh(new THREE.CylinderGeometry(0.057, 0.056, 0.026, 22, 1, true), stripeAccentMat);
-    sockTopBandL.position.y = 0.048;
-    leadCalf.grp.add(sockTopBandL);
+    const thighBandSlices = [
+      { y: 0.195, rx: 0.087, rz: 0.096, oz: 0.005, frontScale: 1.07, backScale: 1.02 },
+      { y: 0.225, rx: 0.083, rz: 0.091, oz: 0.005, frontScale: 1.06, backScale: 1.02 }
+    ];
+    leadThigh.grp.add(new THREE.Mesh(buildSculptedLoftGeometry(thighBandSlices, 28, false, false), stripeOverlayMat));
 
-    const sockTopBandR = new THREE.Mesh(new THREE.CylinderGeometry(0.057, 0.056, 0.026, 22, 1, true), stripeAccentMat);
-    sockTopBandR.position.y = 0.048;
-    rearCalf.grp.add(sockTopBandR);
+    const sockBandSlices = [
+      { y: 0.042, rx: 0.060, rz: 0.064, oz: -0.002, frontScale: 1.01, backScale: 1.12 },
+      { y: 0.068, rx: 0.060, rz: 0.066, oz: -0.005, frontScale: 1.01, backScale: 1.15 }
+    ];
+    leadCalf.grp.add(new THREE.Mesh(buildSculptedLoftGeometry(sockBandSlices, 28, false, false), stripeOverlayMat));
+    rearCalf.grp.add(new THREE.Mesh(buildSculptedLoftGeometry(sockBandSlices, 28, false, false), stripeOverlayMat));
 
-    // 4. Sculpted Asymmetric Fencing Shoes
+    // 4. Sculpted Asymmetric Olympic Fencing Shoes (Contoured Gum Outsole, Rounded Lunge Heel Cup & Medial Drag Guard)
+    const gumSoleMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.58, metalness: 0.08 });
+    const shoeSuedeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.68, metalness: 0.18 });
     function createFencingShoeGroup() {
       const sg = new THREE.Group();
-      const shoeBodySlices = [
-        { y: 0.00, rx: 0.046, rz: 0.124, oz: 0.042, frontScale: 1.18, backScale: 0.72 },
-        { y: 0.035, rx: 0.048, rz: 0.126, oz: 0.040, frontScale: 1.16, backScale: 0.75 },
-        { y: 0.072, rx: 0.040, rz: 0.088, oz: 0.022, frontScale: 1.05, backScale: 0.80 },
-        { y: 0.095, rx: 0.035, rz: 0.046, oz: 0.000, frontScale: 1.00, backScale: 1.00 }
+      // Contoured gum-rubber outsole hugging exact shoe footprint (zero rectangular plank overhang!)
+      const gumSoleSlices = [
+        { y: 0.000, rx: 0.045, rz: 0.122, oz: 0.042, frontScale: 1.16, backScale: 0.72 },
+        { y: 0.015, rx: 0.049, rz: 0.128, oz: 0.042, frontScale: 1.18, backScale: 0.75 },
+        { y: 0.022, rx: 0.047, rz: 0.125, oz: 0.041, frontScale: 1.16, backScale: 0.74 }
       ];
-      const upperMesh = new THREE.Mesh(buildSculptedLoftGeometry(shoeBodySlices, 22), darkTrimMat);
+      const soleMesh = new THREE.Mesh(buildSculptedLoftGeometry(gumSoleSlices, 24), gumSoleMat);
+      soleMesh.castShadow = true;
+      sg.add(soleMesh);
+
+      // Rounded heel-roll cup wrapping up the back of the Achilles heel for explosive lunge landings!
+      const heelCup = new THREE.Mesh(new THREE.SphereGeometry(0.038, 16, 12), gumSoleMat);
+      heelCup.scale.set(1.12, 0.92, 0.85);
+      heelCup.position.set(0, 0.032, -0.038);
+      sg.add(heelCup);
+
+      const shoeBodySlices = [
+        { y: 0.016, rx: 0.045, rz: 0.122, oz: 0.042, frontScale: 1.16, backScale: 0.72 },
+        { y: 0.040, rx: 0.047, rz: 0.123, oz: 0.039, frontScale: 1.14, backScale: 0.74 },
+        { y: 0.074, rx: 0.039, rz: 0.086, oz: 0.020, frontScale: 1.04, backScale: 0.79 },
+        { y: 0.098, rx: 0.035, rz: 0.045, oz: 0.000, frontScale: 1.00, backScale: 1.00 }
+      ];
+      const upperMesh = new THREE.Mesh(buildSculptedLoftGeometry(shoeBodySlices, 24), darkTrimMat);
       upperMesh.castShadow = true;
       sg.add(upperMesh);
 
-      const soleRim = new THREE.Mesh(
-        new THREE.BoxGeometry(0.090, 0.016, 0.230),
-        new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.65, metalness: 0.1 })
-      );
-      soleRim.position.set(0, 0.008, 0.038);
-      sg.add(soleRim);
+      // Reinforced suede toe cap + medial drag-shield bumper
+      const toeCap = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 12), shoeSuedeMat);
+      toeCap.scale.set(1.04, 0.56, 1.38);
+      toeCap.position.set(0, 0.026, 0.138);
+      sg.add(toeCap);
 
-      const chevron = new THREE.Mesh(new THREE.BoxGeometry(0.094, 0.015, 0.062), stripeAccentMat);
-      chevron.position.set(0, 0.044, 0.035);
-      sg.add(chevron);
+      // Twin diagonal speed stripes & ankle collar trim
+      for (const zOff of [0.024, 0.056]) {
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.011, 0.018), stripeAccentMat);
+        stripe.rotation.x = -0.35;
+        stripe.position.set(0, 0.046, zOff);
+        sg.add(stripe);
+      }
+      const ankleCollar = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.0045, 8, 18), gloveMat);
+      ankleCollar.rotation.x = Math.PI * 0.5;
+      ankleCollar.position.set(0, 0.096, 0.002);
+      sg.add(ankleCollar);
 
       root.add(sg);
       return sg;
@@ -820,33 +1025,96 @@ const Fencing3DAssets = (() => {
     const leadShoe = createFencingShoeGroup();
     const rearShoe = createFencingShoeGroup();
 
-    // 5. Rear Gloved Hand & Lead Forearm-Wrapped Fencing Gauntlet Cuff + Hilts
+    // 5. Articulated 5-Digit Open Rear Balance Hand & Detailed 800N Sword Gauntlet Cuff + Hilts
+    const skinHandMat = new THREE.MeshStandardMaterial({
+      color: 0xeac4a8,
+      roughness: 0.56,
+      metalness: 0.04
+    });
     const rearHandGroup = new THREE.Group();
-    const rearPalm = new THREE.Mesh(
-      new THREE.SphereGeometry(0.034, 14, 12),
-      kevlarMat
-    );
-    rearPalm.scale.set(0.82, 1.18, 0.68);
-    rearPalm.position.set(0, 0.018, 0);
+    // Sleeve wrist trim ring
+    const wristCuff = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.033, 0.022, 16), stripeAccentMat);
+    wristCuff.position.set(0, 0.004, 0);
+    rearHandGroup.add(wristCuff);
+
+    // Sculpted metacarpal palm
+    const rearPalm = new THREE.Mesh(new THREE.SphereGeometry(0.033, 16, 12), skinHandMat);
+    rearPalm.scale.set(0.88, 1.22, 0.50);
+    rearPalm.position.set(0, 0.040, 0);
+    rearPalm.castShadow = true;
     rearHandGroup.add(rearPalm);
+
+    // Four gracefully curved, fanned poise fingers (Index, Middle, Ring, Pinky)
+    const fingerSpecs = [
+      { x: -0.019, y: 0.068, len1: 0.030, len2: 0.024, rad: 0.0062, splayZ: -0.14, curlX: 0.22 },
+      { x: -0.006, y: 0.072, len1: 0.034, len2: 0.026, rad: 0.0065, splayZ: -0.04, curlX: 0.26 },
+      { x:  0.007, y: 0.070, len1: 0.031, len2: 0.024, rad: 0.0060, splayZ:  0.06, curlX: 0.32 },
+      { x:  0.019, y: 0.063, len1: 0.025, len2: 0.020, rad: 0.0052, splayZ:  0.17, curlX: 0.38 }
+    ];
+    for (const fs of fingerSpecs) {
+      const fGrp = new THREE.Group();
+      fGrp.position.set(fs.x, fs.y, 0.002);
+      fGrp.rotation.set(fs.curlX, 0, fs.splayZ);
+      const phal1 = new THREE.Mesh(new THREE.CylinderGeometry(fs.rad * 0.9, fs.rad, fs.len1, 10), skinHandMat);
+      phal1.position.y = fs.len1 * 0.5;
+      fGrp.add(phal1);
+
+      const distGrp = new THREE.Group();
+      distGrp.position.y = fs.len1;
+      distGrp.rotation.x = fs.curlX * 1.15;
+      const phal2 = new THREE.Mesh(new THREE.CylinderGeometry(fs.rad * 0.72, fs.rad * 0.88, fs.len2, 10), skinHandMat);
+      phal2.position.y = fs.len2 * 0.5;
+      const tipSphere = new THREE.Mesh(new THREE.SphereGeometry(fs.rad * 0.72, 8, 8), skinHandMat);
+      tipSphere.position.y = fs.len2;
+      distGrp.add(phal2, tipSphere);
+      fGrp.add(distGrp);
+      rearHandGroup.add(fGrp);
+    }
+
+    // Opposable athletic thumb
+    const thumbGrp = new THREE.Group();
+    thumbGrp.position.set(-0.024, 0.034, 0.008);
+    thumbGrp.rotation.set(0.28, 0.20, 0.58);
+    const thumbSeg = new THREE.Mesh(new THREE.CylinderGeometry(0.0068, 0.0085, 0.038, 10), skinHandMat);
+    thumbSeg.position.y = 0.019;
+    const thumbTip = new THREE.Mesh(new THREE.SphereGeometry(0.0068, 8, 8), skinHandMat);
+    thumbTip.position.y = 0.038;
+    thumbGrp.add(thumbSeg, thumbTip);
+    rearHandGroup.add(thumbGrp);
     root.add(rearHandGroup);
 
-    // Attach padded gauntlet cuff directly along distal leadForearm so it never detaches when wrist bends!
+    // Attach padded gauntlet cuff + Velcro strap + FIE 800N woven badge along distal leadForearm
     const cuffProfile = [
-      new THREE.Vector2(0.048, 0.13),
-      new THREE.Vector2(0.042, 0.20),
-      new THREE.Vector2(0.034, 0.268)
+      new THREE.Vector2(0.052, 0.135),
+      new THREE.Vector2(0.046, 0.205),
+      new THREE.Vector2(0.037, 0.268)
     ];
-    const gauntletCuff = new THREE.Mesh(new THREE.LatheGeometry(cuffProfile, 22), gloveMat);
+    const gauntletCuff = new THREE.Mesh(new THREE.LatheGeometry(cuffProfile, 24), gloveMat);
     gauntletCuff.castShadow = true;
     leadForearm.grp.add(gauntletCuff);
+
+    const cuffStrap = new THREE.Mesh(new THREE.TorusGeometry(0.0515, 0.0038, 8, 24), darkTrimMat);
+    cuffStrap.rotation.x = Math.PI * 0.5;
+    cuffStrap.position.y = 0.172;
+    leadForearm.grp.add(cuffStrap);
+
+    const fieBadgeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.45, metalness: 0.2 });
+    const fieBadge = new THREE.Mesh(new THREE.BoxGeometry(0.020, 0.014, 0.006), fieBadgeMat);
+    fieBadge.position.set(0, 0.152, 0.0535);
+    leadForearm.grp.add(fieBadge);
 
     const swordHandGroup = new THREE.Group();
 
     const gloveFist = new THREE.Mesh(new THREE.SphereGeometry(0.040, 16, 14), gloveMat);
-    gloveFist.scale.set(0.86, 0.94, 1.12);
-    gloveFist.position.set(0.004, -0.006, -0.022);
+    gloveFist.scale.set(0.92, 1.00, 1.24);
+    gloveFist.position.set(0.000, -0.009, -0.018);
     swordHandGroup.add(gloveFist);
+
+    // Sculpted gloved thumb & finger knuckle ridges gripping the pistol hilt
+    const gloveThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.042, 10), gloveMat);
+    gloveThumb.rotation.x = Math.PI * 0.46;
+    gloveThumb.position.set(-0.012, 0.018, -0.006);
+    swordHandGroup.add(gloveThumb);
 
     const hilts = createThreeWeaponHilts();
     swordHandGroup.add(hilts.foilHilt);
@@ -881,9 +1149,12 @@ const Fencing3DAssets = (() => {
       torsoGroup,
       headGroup,
       torsoMesh,
+      lowerTorsoMesh,
+      upperTorsoMesh,
       foilLameMesh,
       sabreLameTorsoMesh,
       bibMesh,
+      maskCordMesh,
       maskRimMesh,
       visorArc,
       kevlarMat,
@@ -948,21 +1219,40 @@ const Fencing3DAssets = (() => {
     forearmMesh.position.set(0, -0.012, -0.46);
     armGroup.add(forearmMesh);
 
-    // Gauntlet cuff flares backward from wrist (-0.06) over sleeve (-0.20)
+    // Gauntlet cuff flares backward from wrist (-0.055) cleanly OUTSIDE sleeve (-0.21, radius 0.056 > sleeve 0.045!)
     const cuffProfile = [
-      new THREE.Vector2(0.034, 0.05),
-      new THREE.Vector2(0.043, 0.11),
-      new THREE.Vector2(0.053, 0.20)
+      new THREE.Vector2(0.037, 0.052),
+      new THREE.Vector2(0.047, 0.12),
+      new THREE.Vector2(0.057, 0.21)
     ];
     const cuffMesh = new THREE.Mesh(new THREE.LatheGeometry(cuffProfile, 24), gloveMat);
     cuffMesh.rotation.x = -Math.PI * 0.5;
-    cuffMesh.position.set(0, -0.008, 0);
+    cuffMesh.position.set(0, -0.010, 0);
     armGroup.add(cuffMesh);
 
-    const fistMesh = new THREE.Mesh(new THREE.SphereGeometry(0.038, 16, 14), gloveMat);
-    fistMesh.scale.set(0.86, 0.92, 1.10);
-    fistMesh.position.set(0.004, -0.010, -0.028);
+    const fpStrap = new THREE.Mesh(
+      new THREE.TorusGeometry(0.0545, 0.0040, 8, 24),
+      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.42, metalness: 0.35 })
+    );
+    fpStrap.position.set(0, -0.010, -0.145);
+    armGroup.add(fpStrap);
+
+    const fpFiePatch = new THREE.Mesh(
+      new THREE.BoxGeometry(0.022, 0.006, 0.015),
+      new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.42, metalness: 0.22 })
+    );
+    fpFiePatch.position.set(0, 0.0475, -0.145);
+    armGroup.add(fpFiePatch);
+
+    const fistMesh = new THREE.Mesh(new THREE.SphereGeometry(0.041, 16, 14), gloveMat);
+    fistMesh.scale.set(0.92, 1.02, 1.28);
+    fistMesh.position.set(0.000, -0.009, -0.018);
     armGroup.add(fistMesh);
+
+    const fpThumb = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0115, 0.044, 10), gloveMat);
+    fpThumb.rotation.x = Math.PI * 0.45;
+    fpThumb.position.set(-0.012, 0.020, -0.004);
+    armGroup.add(fpThumb);
 
     const hilts = createThreeWeaponHilts();
     armGroup.add(hilts.foilHilt);
@@ -1141,12 +1431,32 @@ const Fencing3DAssets = (() => {
     scoreTower.add(lampP1Mesh, lampP2Mesh, lampW1Mesh, lampW2Mesh);
     arenaGroup.add(scoreTower);
 
-    const reelGeo = new THREE.CylinderGeometry(0.18, 0.20, 0.10, 18);
-    const reelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.3 });
+    // Piste-Side Podium Split LED Repeaters (P1 South Half z < 0, P2 North Half z > 0 — flashes like Paris 2024 Olympic Pistes!)
+    const podiumLedP1Mat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9 });
+    const podiumLedP2Mat = new THREE.MeshBasicMaterial({ color: 0x0ea5e9 });
+    for (const sideX of [-1.085, 1.085]) {
+      const skirtP1 = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.036, 7.35), podiumLedP1Mat);
+      skirtP1.position.set(sideX, -0.035, -3.72);
+      const skirtP2 = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.036, 7.35), podiumLedP2Mat);
+      skirtP2.position.set(sideX, -0.035, 3.72);
+      arenaGroup.add(skirtP1, skirtP2);
+    }
+
+    // Armored FIE Floor Cable Reels (Enrouleurs) with guide rollers & tension housings at z = ±7.15m
+    const reelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.78, roughness: 0.28 });
     for (const endZ of [-7.15, 7.15]) {
-      const r = new THREE.Mesh(reelGeo, reelMat);
-      r.position.set(0.62, 0.05, endZ);
-      arenaGroup.add(r);
+      const reelGrp = new THREE.Group();
+      reelGrp.position.set(0.62, 0.0, endZ);
+      const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.025, 0.36), reelMat);
+      basePlate.position.y = 0.012;
+      const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.11, 20), reelMat);
+      drum.rotation.z = Math.PI * 0.5;
+      drum.position.y = 0.095;
+      const roller = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.14, 12), goldRivetMat);
+      roller.rotation.z = Math.PI * 0.5;
+      roller.position.set(0, 0.065, endZ < 0 ? 0.16 : -0.16);
+      reelGrp.add(basePlate, drum, roller);
+      arenaGroup.add(reelGrp);
     }
 
     const makeBodyCordLine = () => {
@@ -1213,6 +1523,49 @@ const Fencing3DAssets = (() => {
     );
     arenaGroup.add(bokehPoints);
 
+    // Translucent Nocturnal Skylight Barrel-Vault Canopy & Beaux-Arts Tiered Grandstand Tribunes
+    const glassVaultGeo = new THREE.CylinderGeometry(9.35, 9.35, 25.0, 28, 1, true, 0, Math.PI);
+    const glassVaultMat = new THREE.MeshBasicMaterial({
+      color: 0x0c2442,
+      transparent: true,
+      opacity: 0.24,
+      side: THREE.BackSide,
+      depthWrite: false
+    });
+    const glassVault = new THREE.Mesh(glassVaultGeo, glassVaultMat);
+    glassVault.rotation.z = Math.PI * 0.5;
+    glassVault.rotation.y = Math.PI * 0.5;
+    glassVault.position.set(0, -0.14, 0);
+    arenaGroup.add(glassVault);
+
+    const tribuneMat = new THREE.MeshStandardMaterial({ color: 0x0a1328, roughness: 0.52, metalness: 0.45 });
+    const trimCyanMat = new THREE.MeshBasicMaterial({ color: 0x0284c7, transparent: true, opacity: 0.55 });
+    for (const sideSign of [-1, 1]) {
+      for (let tier = 0; tier < 3; tier++) {
+        const stepBox = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.52 + tier * 0.48, 22.0), tribuneMat);
+        stepBox.position.set(sideSign * (4.35 + tier * 1.20), 0.12 + tier * 0.24, 0);
+        arenaGroup.add(stepBox);
+      }
+      const ledRibbon = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 22.0), trimCyanMat);
+      ledRibbon.position.set(sideSign * 3.74, 0.36, 0);
+      arenaGroup.add(ledRibbon);
+    }
+
+    // Iconic Paris Grand Palais Monumental Ceremonial Staircase Silhouette at Nave North End (z = +11.2m)
+    const stairMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.68, roughness: 0.32 });
+    const stairGroup = new THREE.Group();
+    stairGroup.position.set(0, -0.12, 11.2);
+    for (let st = 0; st < 7; st++) {
+      const wStep = 4.6 - st * 0.28;
+      const stepM = new THREE.Mesh(new THREE.BoxGeometry(wStep, 0.24, 0.52), stairMat);
+      stepM.position.set(0, st * 0.26 + 0.12, st * 0.44);
+      stairGroup.add(stepM);
+    }
+    const landing = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.18, 1.4), goldRivetMat);
+    landing.position.set(0, 2.02, 3.3);
+    stairGroup.add(landing);
+    arenaGroup.add(stairGroup);
+
     return {
       arenaGroup,
       railMat,
@@ -1221,9 +1574,12 @@ const Fencing3DAssets = (() => {
       lampP2Mat,
       lampW1Mat,
       lampW2Mat,
+      podiumLedP1Mat,
+      podiumLedP2Mat,
       cordP1,
       cordP2,
-      spotCones
+      spotCones,
+      bokehPoints
     };
   }
 
