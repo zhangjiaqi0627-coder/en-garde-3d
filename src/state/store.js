@@ -173,6 +173,8 @@ const state = createStrictDomainStateStore({
     replayRecordAccum: 0,
     replayCameraAngle: 0,
     replaySummaryText: '',
+    replayImpactIndex: -1,
+    replayPostRecordTimer: 0,
     keys: { left: false, right: false, p2Advance: false, p2Retreat: false }
   },
   player: {

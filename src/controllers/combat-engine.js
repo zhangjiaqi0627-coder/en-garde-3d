@@ -4,6 +4,8 @@ function recordReplayFrameSnapshot() {
   const snap = {
     p1Z: state.playerZ,
     p2Z: state.aiZ,
+    p1Vel: state.playerVelZ,
+    p2Vel: state.aiVelZ,
     p1Y: state.playerY,
     p2Y: state.aiY,
     p1Posture: state.playerPosture,
@@ -2566,6 +2568,8 @@ function resetPositionsForNextPoint(skipCadence = false) {
   state.replayFrames = [];
   state.replayCursor = 0;
   state.replayRecordAccum = 0;
+  state.replayImpactIndex = -1;
+  state.replayPostRecordTimer = 0;
   state.playerZ = -1.75;
   state.aiZ = 1.75;
   state.playerVelZ = 0;
@@ -2789,8 +2793,10 @@ function triggerPoint(winner, reason, cueKey, offTargetSide = 'p1') {
     return;
   }
 
-  // Capture final impact frame into 3D replay buffer!
+  // Capture exact impact frame & mark index so 3D replay also records 0.28s of post-hit torso recoil & blade ring!
   recordReplayFrameSnapshot();
+  state.replayImpactIndex = state.replayFrames.length - 1;
+  state.replayPostRecordTimer = 0.28;
   const isCleanTouch = (winner === 'player' || winner === 'ai' || winner === 'epee_double');
   const willFinishAfter = (
     (winner === 'player' && state.playerScore + 1 >= state.targetScore) ||
@@ -3181,16 +3187,29 @@ function updateGame(dt) {
 
   if (state.roundPhase === RoundPhase.HALT) {
     state.phaseTimer -= dt;
-    // Engage automatic 3D Broadcast Slow-Motion Replay after initial 0.58s first-person impact beat!
-    if (!state.replayActive && state.autoReplayEnabled && state.phaseTimer <= 2.16 && state.phaseTimer > 0.75 &&
+    // Record ~0.28s of post-impact settle, torso recoil & 22Hz steel ring before cutting to 3D broadcast replay!
+    if (state.replayPostRecordTimer > 0) {
+      state.replayPostRecordTimer = Math.max(0, state.replayPostRecordTimer - dt);
+      state.replayRecordAccum += dt;
+      if (state.replayRecordAccum >= 0.0165) {
+        state.replayRecordAccum = 0;
+        recordReplayFrameSnapshot();
+      }
+    }
+    // Engage automatic 3D Broadcast Slow-Motion Replay after initial 0.52s first-person impact beat!
+    if (!state.replayActive && state.autoReplayEnabled && state.phaseTimer <= 2.22 && state.phaseTimer > 0.75 &&
         state.replayFrames.length >= 14 && state.playerScore < state.targetScore && state.aiScore < state.targetScore &&
         (state.lastPointColor === '#10b981' || state.lastPointColor === '#f43f5e' || state.lastPointColor === '#fbbf24')) {
       state.replayActive = true;
-      state.replayCursor = Math.max(0, state.replayFrames.length - 52);
-      state.replayCameraAngle = (state.playerScore + state.aiScore) % 2 === 0 ? 0.20 : -0.20;
+      state.replayCursor = Math.max(0, state.replayFrames.length - 56);
+      state.replayCameraAngle = (state.playerScore + state.aiScore) % 2 === 0 ? 0.22 : -0.22;
     }
     if (state.replayActive) {
-      state.replayCursor += dt * 23.0; // ~0.38x Olympic slow-motion playback of 60Hz buffer
+      // Olympic Broadcast Time-Ramping: 0.48x approach -> 0.20x ultra-slow-mo through the touch -> smooth linger!
+      const impIdx = state.replayImpactIndex >= 0 ? state.replayImpactIndex : Math.max(0, state.replayFrames.length - 8);
+      const distToImpact = Math.abs(state.replayCursor - impIdx);
+      const replayFps = distToImpact <= 7 ? 12.0 : (distToImpact <= 15 ? 20.0 : 29.0);
+      state.replayCursor += dt * replayFps;
       if (state.replayCursor >= state.replayFrames.length - 1) {
         state.replayCursor = state.replayFrames.length - 1;
       }

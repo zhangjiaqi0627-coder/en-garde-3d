@@ -332,7 +332,8 @@ const ThreeArenaEngine = (() => {
     const {
       baseZ, jumpY, posture, ext, guardX, guardY,
       action, attackQuad, coupeLift, slashPhase, wType, inRange, rivalProfile,
-      oppPelvisZ = (fencer.isP1 ? 99 : -99)
+      oppPelvisZ = (fencer.isP1 ? 99 : -99),
+      velZOverride = null
     } = cfg;
 
     syncFencerEquipment(fencer, wType, inRange, rivalProfile);
@@ -341,22 +342,34 @@ const ThreeArenaEngine = (() => {
     const dirZ = fencer.isP1 ? 1 : -1;
     const swordXSign = -1;
 
+    // Olympic Arm-First Whip Extension (Allongement leads La Fente):
+    // Sword arm extends faster than body drive so the tip threatens first, while legs explode behind!
+    const armExt = ext < 0.06 ? ext : Math.min(1.0, Math.pow(ext, 0.62));
+    const bodyExt = ext < 0.06 ? ext : Math.min(1.0, Math.pow(ext, 1.15));
+
+    const liveVel = velZOverride !== null ? velZOverride : (fencer.isP1 ? (state.playerVelZ || 0) : (state.aiVelZ || 0));
+    const speedNorm = Math.min(1.0, Math.abs(liveVel) / 2.2);
+    const gaitPhase = nowSec * (6.2 + speedNorm * 6.5) + (fencer.isP1 ? 0 : 1.7);
+    const stepBounce = (ext < 0.10 && speedNorm > 0.08 && posture === Posture.STAND)
+      ? Math.abs(Math.sin(gaitPhase)) * 0.018 * speedNorm
+      : 0;
+
     const epeeBounce = (wType === WeaponId.EPEE && posture === Posture.STAND && ext < 0.05)
-      ? Math.abs(Math.sin(nowSec * 6.8 + (fencer.isP1 ? 0 : 1.4))) * 0.045
+      ? Math.abs(Math.sin(nowSec * 6.8 + (fencer.isP1 ? 0 : 1.4))) * 0.042
       : 0;
     const breath = Math.sin(nowSec * 2.8 + (fencer.isP1 ? 0 : 1.1)) * 0.012;
     const crouchDrop = posture === Posture.DUCK ? -0.22 : 0;
     const airLift = posture === Posture.JUMP ? Math.max(0.14, jumpY * 0.55) : Math.max(0, jumpY * 0.55);
 
-    // Olympic La Fente Split: deep pelvic drop + explosive forward surge while rear foot anchors wide behind!
-    let lungePelvisZ = baseZ + dirZ * (ext * 0.50);
+    // Olympic La Fente Split: deep pelvic drop + explosive forward surge while rear foot anchors firmly behind!
+    let lungePelvisZ = baseZ + dirZ * (bodyExt * 0.50);
     const pairMidZ = Math.abs(oppPelvisZ) < 50 ? (baseZ + oppPelvisZ) * 0.5 : (dirZ * 99);
     if (Math.abs(oppPelvisZ) < 50) {
       if (dirZ > 0) lungePelvisZ = Math.min(lungePelvisZ, pairMidZ - 0.52, oppPelvisZ - 1.04);
       else lungePelvisZ = Math.max(lungePelvisZ, pairMidZ + 0.52, oppPelvisZ + 1.04);
     }
     // Deep, athletic Olympic lunge sink (pelvis drops 21cm so front thigh goes horizontal & rear leg locks straight!)
-    const pelvisY = Math.max(0.46, 0.82 - ext * 0.21 + crouchDrop + airLift + epeeBounce + breath);
+    const pelvisY = Math.max(0.46, 0.82 - bodyExt * 0.21 + crouchDrop + airLift + epeeBounce + stepBounce + breath);
 
     // Turn slightly deeper into sleek profile on full lunge (+0.14 rad) to maximize shoulder-to-tip reach!
     const lungeYawTurn = ext * 0.14;
@@ -401,27 +414,30 @@ const ThreeArenaEngine = (() => {
     _pShLead.set(fencer.isP1 ? -0.182 : 0.182, 0.390, 0.022).applyMatrix4(fencer.torsoGroup.matrixWorld);
     _pShRear.set(fencer.isP1 ? 0.182 : -0.182, 0.384, -0.020).applyMatrix4(fencer.torsoGroup.matrixWorld);
 
-    // 1. Wide 1.50m Olympic Lunge Leg Split + Live Marche/Rompez Step Cadence & Ankle Biomechanics!
-    const liveVel = fencer.isP1 ? (state.playerVelZ || 0) : (state.aiVelZ || 0);
-    const speedNorm = Math.min(1.0, Math.abs(liveVel) / 2.2);
-    const gaitPhase = nowSec * (6.2 + speedNorm * 6.5) + (fencer.isP1 ? 0 : 1.7);
-    const stepWave = ext < 0.12 ? Math.sin(gaitPhase) * (0.016 + speedNorm * 0.036) : 0;
-    const leadStepLift = (ext < 0.12 && speedNorm > 0.08) ? Math.max(0, Math.sin(gaitPhase)) * 0.032 * speedNorm : 0;
-    const rearStepLift = (ext < 0.12 && speedNorm > 0.08) ? Math.max(0, -Math.sin(gaitPhase)) * 0.028 * speedNorm : 0;
+    // 1. Wide 1.50m Olympic Lunge Leg Split + Directional Marche/Rompez Footwork & Anchored Rear Foot!
+    const isAdvancing = (dirZ * liveVel) > 0.12;
+    const isRetreating = (dirZ * liveVel) < -0.12;
+    const stepWave = ext < 0.12 ? Math.sin(gaitPhase) * (0.014 + speedNorm * 0.042) : 0;
+    const leadStepLift = (ext < 0.12 && speedNorm > 0.08)
+      ? Math.max(0, Math.sin(gaitPhase + (isAdvancing ? 0.35 : 0))) * (isAdvancing ? 0.038 : 0.022) * speedNorm
+      : 0;
+    const rearStepLift = (ext < 0.12 && speedNorm > 0.08)
+      ? Math.max(0, -Math.sin(gaitPhase + (isRetreating ? 0.35 : 0))) * (isRetreating ? 0.036 : 0.020) * speedNorm
+      : 0;
 
-    // Mid-lunge Heel-First Toe Kick (Dorsiflexion peaks around ext=0.50, then snaps flat onto piste at ext>=0.88!)
-    const heelKickBell = (ext > 0.10 && ext < 0.90) ? Math.sin(((ext - 0.10) / 0.80) * Math.PI) : 0;
-    const leadToePitch = -heelKickBell * 0.24;
-    const leadPitchLift = Math.abs(Math.sin(leadToePitch)) * 0.052;
+    // Mid-lunge Heel-First Toe Kick (Dorsiflexion peaks around bodyExt=0.50, then snaps flat onto piste at bodyExt>=0.88!)
+    const heelKickBell = (bodyExt > 0.10 && bodyExt < 0.90) ? Math.sin(((bodyExt - 0.10) / 0.80) * Math.PI) : 0;
+    const leadToePitch = -heelKickBell * 0.26;
+    const leadPitchLift = Math.abs(Math.sin(leadToePitch)) * 0.055;
 
     const footFloorY = 0.086 + airLift * 0.88;
-    let leadFootZ = lungePelvisZ + dirZ * (0.36 + ext * 0.12 + stepWave);
+    let leadFootZ = lungePelvisZ + dirZ * (0.36 + bodyExt * 0.15 + stepWave);
     if (Math.abs(oppPelvisZ) < 50) {
       const maxFootZ = pairMidZ - dirZ * 0.12;
       leadFootZ = dirZ > 0 ? Math.min(leadFootZ, maxFootZ) : Math.max(leadFootZ, maxFootZ);
     }
-    // Rear foot anchors ~0.78m behind lungePelvisZ at ext=1.0 -> locks rear thigh + calf into a straight power diagonal!
-    const rearFootZ = lungePelvisZ - dirZ * (0.36 + ext * 0.42 - stepWave * 0.6);
+    // Rear foot stays firmly anchored on the piste while pelvis & front leg drive forward (locks rear leg 99% straight!)
+    const rearFootZ = lungePelvisZ - dirZ * (0.36 + bodyExt * 0.44 - stepWave * 0.5);
     const laneOffset = fencer.isP1 ? -0.035 : 0.035;
     _pFootLead.set(
       swordXSign * 0.06 + laneOffset,
@@ -492,9 +508,9 @@ const ThreeArenaEngine = (() => {
 
     // FULL OLYMPIC ALLONGEMENT:
     // As ext -> 1.0, the sword hand rises to shoulder height and locks out 99% straight (0.562m ahead of _pShLead)!
-    let handWorldX = swordXSign * (0.13 * (1 - ext * 0.45)) - guardX * (0.22 - ext * 0.08);
-    let handWorldY = _pShLead.y - 0.14 * (1 - ext * 0.88) - guardY * (0.16 - ext * 0.06) + coupeLift * 0.16;
-    let handWorldZ = _pShLead.z + dirZ * (0.31 + ext * 0.252);
+    let handWorldX = swordXSign * (0.13 * (1 - armExt * 0.45)) - guardX * (0.22 - armExt * 0.08);
+    let handWorldY = _pShLead.y - 0.14 * (1 - armExt * 0.88) - guardY * (0.16 - armExt * 0.06) + coupeLift * 0.16;
+    let handWorldZ = _pShLead.z + dirZ * (0.31 + armExt * 0.252);
 
     const bladeLen = wType === WeaponId.SABRE ? 0.86 : 0.89;
     let tipWorldX = -guardX * 0.30;
@@ -1037,14 +1053,8 @@ const ThreeArenaEngine = (() => {
 
     syncArenaTelemetry3D(nowSec);
 
-    // 3D OLYMPIC SIDE-RAIL SLOW-MOTION BROADCAST REPLAY (Overrides 1P/2P camera during Ralenti!)
+    // 3D OLYMPIC SIDE-RAIL SLOW-MOTION BROADCAST REPLAY (Dynamic Dolly Focus + Time-Ramped Ralenti!)
     if (state.replayActive && state.replayFrames.length >= 2 && !isMenuOpen) {
-      renderer.setScissorTest(false);
-      renderer.setViewport(0, 0, w, h);
-      camP1.aspect = w / Math.max(1, h);
-      camP1.fov = 42;
-      camP1.updateProjectionMatrix();
-
       const idx0 = Math.min(state.replayFrames.length - 1, Math.max(0, Math.floor(state.replayCursor)));
       const idx1 = Math.min(state.replayFrames.length - 1, idx0 + 1);
       const alpha = state.replayCursor - idx0;
@@ -1052,14 +1062,32 @@ const ThreeArenaEngine = (() => {
       const f1 = state.replayFrames[idx1];
       const lerp = (a, b) => a + (b - a) * alpha;
 
+      const startIdx = Math.max(0, state.replayFrames.length - 56);
+      const impIdx = state.replayImpactIndex >= 0 ? state.replayImpactIndex : Math.max(0, state.replayFrames.length - 8);
+      const impProg = Math.max(0, Math.min(1, (state.replayCursor - startIdx) / Math.max(1, impIdx - startIdx)));
+      const focusEase = impProg * impProg * (3 - 2 * impProg);
+
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, w, h);
+      camP1.aspect = w / Math.max(1, h);
+      // Smoothly dolly-zoom from 45° wide piste framing down to 36° tight impact framing!
+      camP1.fov = 45 - focusEase * 9;
+      camP1.updateProjectionMatrix();
+
       const midZ = lerp(f0.p1Z + f0.p2Z, f1.p1Z + f1.p2Z) * 0.5;
-      const sweepAz = state.replayCameraAngle + (alpha + idx0 * 0.01) * 0.16;
+      const sweepAz = state.replayCameraAngle + (state.replayCursor - startIdx) * 0.0085;
+      const camRadius = 3.82 - focusEase * 0.62;
       camP1.position.set(
-        3.68 * Math.cos(sweepAz),
-        1.24,
-        midZ + Math.sin(sweepAz) * 1.05
+        camRadius * Math.cos(sweepAz),
+        1.28 - focusEase * 0.14,
+        midZ + Math.sin(sweepAz) * 1.15
       );
-      camP1.lookAt(0.0, 1.02, midZ);
+      // Gently pan lookAt toward the struck fencer's chest at impact!
+      const hitBiasZ = (f1.p1Pin || f0.p1Pin)
+        ? (lerp(f0.p2Z, f1.p2Z) - 0.35) * 0.32 + midZ * 0.68
+        : ((f1.p2Pin || f0.p2Pin) ? (lerp(f0.p1Z, f1.p1Z) + 0.35) * 0.32 + midZ * 0.68 : midZ);
+      const lookZ = midZ + (hitBiasZ - midZ) * focusEase;
+      camP1.lookAt(0.0, 1.00 + focusEase * 0.06, lookZ);
 
       // Temporarily apply recorded blade buckle, vibration, 3D surface pin & body recoil during replay!
       const savedB1 = state.bladeBuckleAmp, savedB2 = state.p2BladeBuckleAmp;
@@ -1110,14 +1138,16 @@ const ThreeArenaEngine = (() => {
         ext: repP1Ext, guardX: lerp(f0.p1GX, f1.p1GX), guardY: lerp(f0.p1GY, f1.p1GY),
         action: f0.p1Act, attackQuad: f0.p1Quad, coupeLift: 0,
         slashPhase: lerp(f0.p1Slash, f1.p1Slash), wType, inRange: true, rivalProfile: null,
-        oppPelvisZ: repP2PelvisZ
+        oppPelvisZ: repP2PelvisZ,
+        velZOverride: lerp(f0.p1Vel || 0, f1.p1Vel || 0)
       }, nowSec);
       poseFencer3D(fencerP2, {
         baseZ: lerp(f0.p2Z, f1.p2Z), jumpY: lerp(f0.p2Y, f1.p2Y), posture: f0.p2Posture,
         ext: repP2Ext, guardX: lerp(f0.p2GX, f1.p2GX), guardY: lerp(f0.p2GY, f1.p2GY),
         action: f0.p2Act, attackQuad: f0.p2Quad, coupeLift: lerp(f0.p2Coupe, f1.p2Coupe),
         slashPhase: lerp(f0.p2Slash, f1.p2Slash), wType, inRange: true, rivalProfile,
-        oppPelvisZ: repP1PelvisZ
+        oppPelvisZ: repP1PelvisZ,
+        velZOverride: lerp(f0.p2Vel || 0, f1.p2Vel || 0)
       }, nowSec);
 
       state.bladeBuckleAmp = savedB1; state.p2BladeBuckleAmp = savedB2;
@@ -1658,12 +1688,17 @@ function renderScene() {
       ctx.arc(46, 100, 5.5, 0, Math.PI * 2);
       ctx.fill();
     }
+    const impIdxHud = state.replayImpactIndex >= 0 ? state.replayImpactIndex : Math.max(0, state.replayFrames.length - 8);
+    const distHud = Math.abs(state.replayCursor - impIdxHud);
+    const speedTag = distHud <= 7 ? '0.20x IMPACT' : (distHud <= 15 ? '0.33x LUNGE' : '0.48x APPROCHE');
+    const lampLit = state.replayCursor >= impIdxHud - 1;
+
     ctx.font = 'italic 900 18px "Barlow Condensed", sans-serif';
     ctx.fillStyle = '#fde047';
-    ctx.fillText('RALENTI OFFICIEL 3D // 0.38x SLOW-MO', 60, 98);
+    ctx.fillText(`RALENTI OFFICIEL 3D // ${speedTag}`, 60, 98);
     ctx.font = '700 10px "JetBrains Mono", monospace';
-    ctx.fillStyle = '#cbd5e1';
-    ctx.fillText('CLICK / SPACE 跳过回放 · [R] 重播本剑', 60, 114);
+    ctx.fillStyle = lampLit ? (state.lastPointColor || '#34d399') : '#cbd5e1';
+    ctx.fillText(lampLit ? '● TOUCHÉ ENREGISTRÉ · CLICK / SPACE 跳过' : 'CLICK / SPACE 跳过回放 · [R] 重播本剑', 60, 114);
 
     // Top-right Olympic Broadcast Biomechanical Telemetry Readout (Measure, Tip Velocity & Extension %)
     if (state.replayFrames.length >= 2) {
@@ -1687,8 +1722,8 @@ function renderScene() {
       ctx.fillText(`POINTE: ${tipSpeedMs.toFixed(1)} m/s · ALLONGEMENT: ${peakExtPct}%`, teleX + 12, 113);
     }
 
-    // Replay Timeline Progress Bar
-    const startIdx = Math.max(0, state.replayFrames.length - 52);
+    // Replay Timeline Progress Bar (with golden impact tick!)
+    const startIdx = Math.max(0, state.replayFrames.length - 56);
     const denom = Math.max(1, state.replayFrames.length - 1 - startIdx);
     const prog = Math.max(0, Math.min(1, (state.replayCursor - startIdx) / denom));
     const barW = Math.min(360, w * 0.42);
